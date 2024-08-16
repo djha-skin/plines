@@ -4,6 +4,11 @@
 /paper/*.cut
 /paper/*.out
 /paper/*.aux
+/paper/*.bbl
+/paper/*.blg
+/paper/*.dvi
+/paper/*.xcp
+
 
 # Build outputs
 /target/*

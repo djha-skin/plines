@@ -1,5 +1,4 @@
 \documentclass[sigconf]{acmart}
-\usepackage[pdf]{graphviz}
 \begin{document}
 
 \title{Pennant Lines: An Alternative to Finger Trees in Dynamic Environments}
@@ -74,7 +73,7 @@ dictionary. By implementing the list API, we make it easy for people to use the
 structure, since all the functions they are used to using with lists exist and
 work just as they do for lists, they just exist in a different package.
 
-As a first attempt at this task, Finger Trees\cite{Hinze-Paterson:FingerTree}
+As a first attempt at this task, Finger Trees \cite{Hinze-Paterson:FingerTree}
 were first examined. The problem with Finger Trees is that, while they are easy
 to implement in Haskell, with its algebraic sum types and pattern matching, they
 are clunky to implement in a dynamically typed language like Lisp. Implementing
@@ -114,7 +113,9 @@ what functionality needs to exist for that API. We then develop an answer to
 that API with weight-balanced binary trees. Finally, develop even better run
 times by adding pennant lines to the mix.
 
-Here is the API for lists which we will implement, or in some cases, reuse:
+\subsection{The List API}
+
+Here is the API for lists which we wish to implement persistently:
 
 \begin{itemize}
     \item \texttt{subst}, \texttt{subst-if}, \texttt{subst-if-not}
@@ -204,7 +205,7 @@ fast":
     \item \texttt{find} (check if sorted, check the sorted flag)
     \item \texttt{position} (check if sorted)
     \item \texttt{mismatch} (check if sorted)
-    \item \texttt{substitute} (
+    \item \texttt{substitute}
     \item \texttt{concatenate}
     \item \texttt{merge}
     \item \texttt{remove}
@@ -227,6 +228,48 @@ These APIs boils down to a persistent-by-default structure supporting the follow
 
 It would also be nice to reuse some of the functions, like \texttt{tree-equal} and
 \texttt{copy-tree}.
+
+\subsection{Observations about Ranked Binary Trees}
+
+We first note that the Finger Tree "monoid trick" in
+\cite{Hinze-Paterson:FingerTree} can actually be done with any tree, including a
+binary search tree.
+
+Supposed each node in a binary search tree has also a `size` component. Then,
+provided an index into the tree, 1) insertion can be done without comparing values
+in the tree to each other and 2) can be inserted into the given index in
+logarithmic time.
+
+The lookup algorithm is straight forward. The index is compared against the size
+components of the left and right child of the root. If the left child's size
+is greater than the index, insertion recurses into the left child using the same
+index. If the index equals the left child size, the value of the root node is returned.
+If it is greater than the left child size, insertion recurses into the right
+child using `(- index 1 (node-size (node-left tree)))` as the index.
+
+Insertion works by finding the indexed node, taking the value at that spot,
+and inserting it into the right child of the indexed node, and rebalancing.
+
+Similar algorithms exist for access and deletion.
+
+(draft note, this section needs more sources cited)
+
+That gives us a logarithmic baseline for insertion, random access, deletion and
+stack-based traversal. We still need concatenation, splitting, and set
+operations. For concatenation and splitting, we can use the work due to Guy E.
+Blelloch, Daniel Ferizovic, and Yihan Sun (2016, 2022.) We'll also use their
+work a bit later for set operations.
+
+We choose, then, to use "normal" binary trees as the
+basis of our new data structure, instead of 2-3 leaf trees. That way, the data
+structure is much more homogeneous; the code becomes simpler, with fewer cases.
+
+Binary trees will give us a nice baseline of logarithmic time for many
+operations, but if we want efficient insertion at the beginning and end, we're
+looking at a zipper like 2-3 trees did. That means there will be \emph{some}
+polymorphism/complexity associated with that. Hopefully we can keep that to a
+minimum.
+
 
 
 \section{Tables}
@@ -346,45 +389,8 @@ so important, please see
     Utah for previewing drafts and offering feedback.
 \end{acks}
 
-%%
-%% The next two lines define the bibliography style to be used, and
-%% the bibliography file.
+\bibliography{\jobname}
 \bibliographystyle{ACM-Reference-Format}
-\bibliography{pennant-lines}
-
-%%
-%% If your work has an appendix, this is the place to put it.
-\appendix
-
-\section{Research Methods}
-
-\subsection{Part One}
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi
-malesuada, quam in pulvinar varius, metus nunc fermentum urna, id
-sollicitudin purus odio sit amet enim. Aliquam ullamcorper eu ipsum
-vel mollis. Curabitur quis dictum nisl. Phasellus vel semper risus, et
-lacinia dolor. Integer ultricies commodo sem nec semper.
-
-\subsection{Part Two}
-
-Etiam commodo feugiat nisl pulvinar pellentesque. Etiam auctor sodales
-ligula, non varius nibh pulvinar semper. Suspendisse nec lectus non
-ipsum convallis congue hendrerit vitae sapien. Donec at laoreet
-eros. Vivamus non purus placerat, scelerisque diam eu, cursus
-ante. Etiam aliquam tortor auctor efficitur mattis.
-
-\section{Online Resources}
-
-Nam id fermentum dui. Suspendisse sagittis tortor a nulla mollis, in
-pulvinar ex pretium. Sed interdum orci quis metus euismod, et sagittis
-enim maximus. Vestibulum gravida massa ut felis suscipit
-congue. Quisque mattis elit a risus ultrices commodo venenatis eget
-dui. Etiam sagittis eleifend elementum.
-
-Nam interdum magna at lectus dignissim, ac dignissim lorem
-rhoncus. Maecenas eu arcu ac neque placerat aliquam. Nunc pulvinar
-massa et mattis lacinia.
 
 \end{document}
 \endinput

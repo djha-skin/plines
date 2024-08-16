@@ -1,0 +1,31 @@
+# Latex
+/paper/*.log
+/paper/*.out
+/paper/*.aux
+
+# Build outputs
+/target/*
+*.abcl
+*.fasl
+*.dx32fsl
+*.dx64fsl
+*.lx32fsl
+*.lx64fsl
+*.x86f
+*.so
+*.dll
+*.exe
+
+# Editor save files, bookkeeping files
+*~
+.#*
+\#*
+.*#
+.*.sw[a-z]
+/.slime_paste
+
+# Lisp stuff
+/.repl/ros_history
+/.qlot/
+/systems/
+/.bundle-libs/

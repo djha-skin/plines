@@ -1,5 +1,7 @@
 # Latex
 /paper/*.log
+/paper/*.pdf
+/paper/*.cut
 /paper/*.out
 /paper/*.aux
 

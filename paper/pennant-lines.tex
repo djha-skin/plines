@@ -1,4 +1,5 @@
 \documentclass[sigconf]{acmart}
+\usepackage{hyperref}
 \begin{document}
 
 \title{Pennant Lines: An Alternative to Finger Trees in Dynamic Environments}
@@ -49,16 +50,16 @@ When in a dynamically typed language like Lisp, it is often convenient to work
 with a data structure in specific ways in one moment, such as for operating on
 sets, and then perform simple list operations on them the next. Alists are nice
 because at the end of the day, "they are just lists" -- they can be fed into
-functions that expect an array of items, like \texttt{print}. Object type is fluid in
-Lisp, as is object purpose. In Lisp, data structures can be used for their
-characteristics and ergonomics, rather than for their intended type. Lisp is
-a highly dynamic environment.
+functions that expect an array of items, like \texttt{print}. Object type is
+fluid in Lisp, as is object purpose. In Lisp, data structures can be used for
+their characteristics and ergonomics, rather than for their intended type. Lisp
+is a highly dynamic environment.
 
-In the dynamic environment of Common Lisp, lists are used for  \emph{everything}, from
-dictionaries to sets to arrays. All the tooling works better with these data
-structures than with anything else. Getting the nth element, performing set
-union or intersection, stack operations, and syntax abstractions on lists are
-all defined in the Common Lisp standard.
+In the dynamic environment of Common Lisp, lists are used for
+\emph{everything}, from dictionaries to sets to arrays. All the tooling works
+better with these data structures than with anything else. Getting the nth
+element, performing set union or intersection, stack operations, and syntax
+abstractions on lists are all defined in the Common Lisp standard.
 
 However, lists present poor run time characteristics when used for anything more
 complicated than a stack. Often lists are used simply because of their ease of
@@ -66,27 +67,27 @@ use with little regard for runtime. This is fine until the runtime becomes
 important; then ergonomics is sacrificed and the code is rewritten data
 structures which are faster, but less ergonomic.
 
-We wish to implement the Common Lisp list and sequence API in a way which is
-ergonomic, persistent by default, and dynamic. This means the resulting data
-structure must be usable as a list first, but sometimes also as a set or
-dictionary. By implementing the list API, we make it easy for people to use the
-structure, since all the functions they are used to using with lists exist and
-work just as they do for lists, they just exist in a different package.
+In this paper, we wish to implement a data structure with an API that imitates
+the Common Lisp list API but in a way that is ergonomic, persistent by default,
+and dynamic. This means the resulting data structure must be usable as a list
+first, but sometimes also as a set or dictionary. By implementing functions
+that mirror the list API, we make it easy for people to use the structure, since
+all the functions they are used to using with lists exist and work just as they
+do for lists, they just exist in a different package.
 
 As a first attempt at this task, Finger Trees \cite{Hinze-Paterson:FingerTree}
-were first examined. The problem with Finger Trees is that, while they are easy
-to implement in Haskell, with its algebraic sum types and pattern matching, they
-are clunky to implement in a dynamically typed language like Lisp. Implementing
-Finger Trees involves polymorphic recursion. Every level in a finger tree
-contains deeper 2-3 trees than the level above it, and values are only at the
-leaves. The spine of the tree is different than the leaves.
+were first examined. Finger Trees are easy
+to implement in Haskell, with its algebraic sum types and pattern matching. The
+problem is that they are clunky to implement in a dynamically typed language
+like Lisp. Implementing Finger Trees involves polymorphic recursion. Every level
+in a finger tree contains deeper 2-3 trees than the level above it, and values
+are only at the leaves. The spine of the tree is different than the leaves.
 
 This creates a lot of case-by-case work in Lisp. The CLOS is well designed, but
 can be slow, especially in the "hot path" in which data structure operations
 often find themselves. Without using the CLOS, we are left with the choice of
-using \texttt{defstruct} and \texttt{typecase}, which greatly complicates the implementation.
-This is especially true in a language without built-in support for pattern
-matching like Lisp.
+using \texttt{defstruct} and \texttt{typecase}, both of which greatly complicate
+the implementation.
 
 It would be ideal if the data structure were relatively homogeneous -- it looked
 the same throughout. This would greatly decrease case logic.
@@ -102,9 +103,9 @@ be.
 
 So, we need to create a data structure that is relatively homogeneous, with
 few cases to manage. It must be able to be used dynamically for different
-purposes. It must be persistent by default, but changeable if needed. Most
-important, it should have good running time when implementing the Common Lisp
-Standard's List API is implemented.
+purposes. It must be persistent by default, but changeable if needed. It should
+have good running time. Finally, its API should closely mirror the Common Lisp
+Standard's List API.
 
 \section{Development}
 
@@ -115,160 +116,86 @@ times by adding pennant lines to the mix.
 
 \subsection{The List API}
 
-Here is the API for lists which we wish to implement persistently:
+The API for lists\cite{ANSI:1994:DPA} outlines three basic uses for lists:
 
-\begin{itemize}
-    \item \texttt{subst}, \texttt{subst-if}, \texttt{subst-if-not}
-    \item \texttt{sublis}
-    \item \texttt{atom}
-    \item \texttt{copy-tree}
-    \item \texttt{tree-equal}
-    \item \texttt{copy-list}
-    \item \texttt{list-length}
-    \item \texttt{list}, \texttt{list*}, \texttt{make-list}
-    \item \texttt{listp}
-    \item \texttt{push}
-    \item \texttt{pop}
-    \item \texttt{nth}
-    \item \texttt{null}
-    \item \texttt{butlast}
-    \item \texttt{pairlis}
-    \item \texttt{assoc}
-    \item \texttt{subsetp}
-    \item \texttt{union}
-    \item \texttt{intersection}
-    \item \texttt{set-difference}
-    \item \texttt{set-exclusive-or}
-    \item \texttt{pushnew}
-    \item \texttt{first}..\texttt{tenth}
-    \item \texttt{cons}
-    \item \texttt{acons}
-    \item \texttt{endp}
-    \item \texttt{ldiff}
-    \item \texttt{tailp}
-    \item \texttt{rest}
-    \item \texttt{member}, \texttt{member-if}, \texttt{member-if-not}
-    \item \texttt{map*} functions
-\end{itemize}
+\begin{enumerate}
+    \item As sequences of items.
+    \item As association structures.
+    \item As sets.
+\end{enumerate}
 
-Also mutating versions:
-
-\begin{itemize}
-    \item \texttt{rplaca}, \texttt{rplacd}
-    \item \texttt{nconc}
-    \item \texttt{nsubst}, \texttt{nsubst-if}, \texttt{nsubst-if-not}
-    \item \texttt{nbutlast}
-\end{itemize}
-
-We also must deal with the generic sequences API. Here are the functions we
-choose to implement from that API:
-
-Functions that modify the original structure:
-
-
-\begin{itemize}
-    \item \texttt{delete}, \texttt{delete-if}, \texttt{delete-if-not}
-    \item \texttt{nsubstitute-if}, \texttt{nsubstitute-if-not}
-    \item \texttt{fill}
-    \item \texttt{map-into}
-    \item \texttt{replace}
-    \item \texttt{nsubstitute}
-\end{itemize}
-
-Functions that don't care what the sequence is, they just need one (and
-therefore traversal needs to be kinda fast, hopefully somewhat
-locality-respecting).
-
-\begin{itemize}
-    \item \texttt{map}
-    \item \texttt{reduce}
-    \item \texttt{count-if}, \texttt{count-if-noT}
-    \item \texttt{find-if}, \texttt{find-if-not}
-    \item \texttt{position-if}, \texttt{position-if-not}
-    \item \texttt{substitute-if}, \texttt{substitute-if-not}
-    \item \texttt{remove-if}, \texttt{remove-if-not},
-    \item \texttt{search}
-    \item \texttt{sort}, \texttt{stable-sort} (sets sorted flag)
-\end{itemize}
-
-Functions that can be implemented persistently and therefore need to be "kinda
-fast":
-
-\begin{itemize}
-    \item \texttt{elt}
-    \item \texttt{copy-seq}
-    \item \texttt{make-sequence}
-    \item \texttt{subseq}
-    \item \texttt{count}
-    \item \texttt{length}
-    \item \texttt{reverse}
-    \item \texttt{find} (check if sorted, check the sorted flag)
-    \item \texttt{position} (check if sorted)
-    \item \texttt{mismatch} (check if sorted)
-    \item \texttt{substitute}
-    \item \texttt{concatenate}
-    \item \texttt{merge}
-    \item \texttt{remove}
-    \item \texttt{remove-duplicates} (tree's left arm is \texttt{<=}, multiset)
-\end{itemize}
-
-(We will likely have to pare this down a bit, but it's still an interesting
-idea)
-
-These APIs boils down to a persistent-by-default structure supporting the following:
+We will also seek to make a datastructure suitable for these three uses using a
+persistent-by-default structure. Therefore, the following operations need to be
+supported:
 
 \begin{itemize}
     \item Efficient random insertion, deletion, and access (IDA)
     \item Efficient IDA at the ends
-    \item Efficient traversal
+    \item Efficient reduction
     \item Efficient concatenation
-    \item Efficient splitting
+    \item Efficient splitting / subsequencing
     \item Efficient set operations
 \end{itemize}
 
-It would also be nice to reuse some of the functions, like \texttt{tree-equal} and
-\texttt{copy-tree}.
+These will be used separately or in combination depending on the API function.
 
 \subsection{Observations about Ranked Binary Trees}
 
-We first note that the Finger Tree "monoid trick" in
-\cite{Hinze-Paterson:FingerTree} can actually be done with any tree, including a
-binary search tree.
+We first note that the Hinze and Paterson's Finger Tree "monoid
+trick"\cite{Hinze-Paterson:FingerTree} can actually be done with any tree,
+including a binary search tree.
 
-Supposed each node in a binary search tree has also a `size` component. Then,
-provided an index into the tree, 1) insertion can be done without comparing values
-in the tree to each other and 2) can be inserted into the given index in
-logarithmic time.
+\begin{lstlisting}[caption={Our indexed binary tree type.}, label={lst:treestruct}, language=Lisp]
+;;; Indexed node within a binary tree.
+(defstruct (node (:type list))
+    value
+    size
+    left
+    right)
+\end{lstlisting}
 
-The lookup algorithm is straight forward. The index is compared against the size
+Throughout the rest of this paper, when discussing binary trees, we will use
+the definition in listing \ref{lst:treestruct}.
+
+Suppose each node in a binary search tree has also a `size` component. Then,
+provided an index into the tree, then insert, delete, and access operations can
+be done without comparing values in the tree to each other by instead comparing
+tree and subtree sizes to the currently given index. In this way, a value
+can be inserted, deleted, or accessed at the given index in logarithmic time.
+
+The access algorithm is straightforward. The index is compared against the size
 components of the left and right child of the root. If the left child's size
 is greater than the index, insertion recurses into the left child using the same
 index. If the index equals the left child size, the value of the root node is returned.
 If it is greater than the left child size, insertion recurses into the right
-child using `(- index 1 (node-size (node-left tree)))` as the index.
+child using \texttt{(- index 1 (node-size (node-left tree)))} as the index.
 
-Insertion works by finding the indexed node, taking the value at that spot,
-and inserting it into the right child of the indexed node, and rebalancing.
+Insertion works by finding the indexed node, swapping the value at that spot
+with the value that needs inserted, and then recursing into the right child with
+the swapped out value and an index of 0, followed by a rebalancing step going
+back up the tree.
 
-Similar algorithms exist for access and deletion.
-
-(draft note, this section needs more sources cited)
+Deletion works by finding the indexed node, deleting the value at that spot,
+then, deleting the value from the right child at index 0 (or the left child at
+index \texttt{(-1 (node-size left-child))} and placing that value in the spot
+which we leave behind, rebalancing as we go.
 
 That gives us a logarithmic baseline for insertion, random access, deletion and
 stack-based traversal. We still need concatenation, splitting, and set
 operations. For concatenation and splitting, we can use the work due to Guy E.
-Blelloch, Daniel Ferizovic, and Yihan Sun (2016, 2022.) We'll also use their
-work a bit later for set operations.
+Blelloch, Daniel Ferizovic, and Yihan Sun\cite{10.1145/3512769}. We'll also use
+their work a bit later for set operations\cite{DBLP:journals/corr/BlellochFS16}.
 
 We choose, then, to use "normal" binary trees as the
 basis of our new data structure, instead of 2-3 leaf trees. That way, the data
 structure is much more homogeneous; the code becomes simpler, with fewer cases.
 
 Binary trees will give us a nice baseline of logarithmic time for many
-operations, but if we want efficient insertion at the beginning and end, we're
-looking at a zipper like 2-3 trees did. That means there will be \emph{some}
-polymorphism/complexity associated with that. Hopefully we can keep that to a
-minimum.
+operations, but if we want efficient insertion at the beginning and end, we will
+have to use a Zipper\cite{HUET_1997}, kind of like Hinze and
+Patterson\cite{Hinze-Paterson:FingerTree} did with Finger Trees. That means
+there will be added polymorphism and hence complexity, but it will not be too
+much.
 
 
 

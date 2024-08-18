@@ -23,7 +23,18 @@
     (:import-from #:alexandria)
   (:export
     size
-    by-index))
+    by-index
+    insert-min
+    insert-max
+    insert
+    delete-min
+    delete-max
+    delete
+    access
+    unglue
+    glue))
+
+
 
 (in-package #:com.djhaskin.plines/wbtrees)
 
@@ -159,7 +170,17 @@
                    (tleft left)
                    (tright right))
           tree
-        (newnode tval (insert-min val tleft) tright))))
+        (balance-right tval (insert-min val tleft) tright))))
+
+(defun insert-max
+    (val tree)
+  (if (null tree)
+      (newnode val nil nil)
+      (with-slots ((tval value)
+                   (tleft left)
+                   (tright right))
+          tree
+        (balance-left tval tleft (insert-max val tright)))))
 
 (defun insert
     (val
@@ -218,7 +239,8 @@
         (values tright value)
         (multiple-value-bind (newleft deleted)
             (delete-min tleft)
-          (values (newnode tval newleft right) deleted)))))
+          (values (balance-left
+                    tval newleft right) deleted)))))
 
 (defun delete-max (tree)
   (with-slots
@@ -230,7 +252,8 @@
         (values tleft value)
         (multiple-value-bind (newright deleted)
             (delete-max tright)
-          (values (newnode tval left newright) deleted)))))
+          (values (balance-right
+                    tval left newright) deleted)))))
 
 (defun delete
     (val
@@ -326,3 +349,15 @@
                :sentinel sentinel))
             (:else
              tval)))))))
+
+(defun unglue
+    (tree)
+  (with-slots
+      ((tval value)
+       (tleft left)
+       (tright right))
+      (values tval tleft tright)))
+
+(defun glue
+    (pivot left right)
+  (newnode pivot left right))

@@ -1,84 +1,117 @@
 %Entries
 
 @article{Hinze-Paterson:FingerTree,
-    title = "Finger Trees: A Simple General-purpose Data Structure",
-    author = "Ralf Hinze and Ross Paterson",
-    journal = "Journal of Functional Programming",
-    volume = 16,
-    number = 2,
-    pages = "197-217",
-    year = 2006
+  title = "Finger Trees: A Simple General-purpose Data Structure",
+  author = "Ralf Hinze and Ross Paterson",
+  journal = "Journal of Functional Programming",
+  volume = 16,
+  number = 2,
+  pages = "197-217",
+  year = 2006
 }
 
 @workingPaper{BlumMehlhorn_1978, title={On the average number of rebalancing operations in weight-balanced trees}, author={Blum, Norbert and Mehlhorn, Kurt}, doi={http://dx.doi.org/10.22028/D291-26073}, year={1978} }
 
 @Manual{ANSI:1994:DPA,
-title =        "Draft proposed {American National Standard Programming
-               Language Common LISP}",
-number =       "X3.226-199x (Draft 15.17R, X3J13/94-101R)",
-author = "X3J13",
-organization = "{American National Standards Institute} and {Computer
-               and Business Equipment Manufacturers Association}",
-url = "https://franz.com/support/documentation/cl-ansi-standard-draft-w-sidebar.pdf",
-lastaccessed = "August 16, 2024",
-address =      "Washington, DC, USA",
-pages =        "1356",
-day =          "12",
-month =        aug,
-year =         1994,
-bibdate =      "Fri Aug 16 17:09:00 MDT 2024",
-keywords =     "COMMON LISP (Computer program language) --
-               Standards.",
+  title =        "Draft proposed {American National Standard Programming
+    Language Common LISP}",
+  number =       "X3.226-199x (Draft 15.17R, X3J13/94-101R)",
+  author = "X3J13",
+  organization = "{American National Standards Institute} and {Computer
+    and Business Equipment Manufacturers Association}",
+  url = "https://franz.com/support/documentation/cl-ansi-standard-draft-w-sidebar.pdf",
+  lastaccessed = "August 16, 2024",
+  address =      "Washington, DC, USA",
+  pages =        "1356",
+  day =          "12",
+  month =        aug,
+  year =         1994,
+  bibdate =      "Fri Aug 16 17:09:00 MDT 2024",
+  keywords =     "COMMON LISP (Computer program language) --
+    Standards.",
 }
 
 @article{10.1145/3512769,
-author = {Blelloch, Guy and Ferizovic, Daniel and Sun, Yihan},
-title = {Joinable Parallel Balanced Binary Trees},
-year = {2022},
-issue_date = {June 2022},
-publisher = {Association for Computing Machinery},
-address = {New York, NY, USA},
-volume = {9},
-number = {2},
-issn = {2329-4949},
-url = {https://doi.org/10.1145/3512769},
-doi = {10.1145/3512769},
-abstract = {In this article, we show how a single function, join, can be used to implement parallel balanced binary search trees (BSTs) simply and efficiently. Based on join , our approach applies to multiple balanced tree data structures, and a variety of functions for ordered sets and maps. We describe our technique as an algorithmic framework called join-based algorithms. We show that the join function fully captures what is needed for rebalancing trees for a variety of tree algorithms, as long as the balancing scheme satisfies certain properties, which we refer to as joinable trees. We discuss four balancing schemes that are joinable: AVL trees, red-black trees, weight-balanced trees, and treaps. We present a variety of tree algorithms that apply to joinable trees, including insert , delete , union , intersection , difference , split , range , filter , and so on, most of them also parallel. These algorithms are generic across balancing schemes. Many algorithms are optimal in the comparison model, and we provide a general proof to show the efficiency in work for joinable trees. The algorithms are highly parallel, all with polylogarithmic span (parallel dependence). Specifically, the set-set operations union , intersection , and difference have work  ( O(mlog (frac{n}{m}+1)) )  and polylogarithmic span for input set sizes  ( n )  and  ( mle n ) . We implemented and tested our algorithms on the four balancing schemes. In general, all four schemes have quite similar performance, but the weight-balanced tree slightly outperforms the others. They have the same speedup characteristics, getting around 73 ( times )  speedup on 72 cores (144 hyperthreads). Experimental results also show that our implementation outperforms existing parallel implementations, and our sequential version achieves close or much better performance than the sequential merging algorithm in C++ Standard Template Library (STL) on various input sizes.},
-journal = {ACM Trans. Parallel Comput.},
-month = {apr},
-articleno = {7},
-numpages = {41},
-keywords = {Balanced binary trees, searching, parallel, union}
+  author = {Blelloch, Guy and Ferizovic, Daniel and Sun, Yihan},
+  title = {Joinable Parallel Balanced Binary Trees},
+  year = {2022},
+  issue_date = {June 2022},
+  publisher = {Association for Computing Machinery},
+  address = {New York, NY, USA},
+  volume = {9},
+  number = {2},
+  issn = {2329-4949},
+  url = {https://doi.org/10.1145/3512769},
+  doi = {10.1145/3512769},
+  journal = {ACM Trans. Parallel Comput.},
+  month = {apr},
+  articleno = {7},
+  numpages = {41},
+  keywords = {Balanced binary trees, searching, parallel, union}
 }
 
 @article{DBLP:journals/corr/BlellochFS16,
-author       = {Guy E. Blelloch and
-                Daniel Ferizovic and
-                Yihan Sun},
-title        = {Parallel Ordered Sets Using Join},
-journal      = {CoRR},
-volume       = {abs/1602.02120},
-year         = {2016},
-url          = {http://arxiv.org/abs/1602.02120},
-lastaccessed = "August 17, 2024",
-eprinttype    = {arXiv},
-eprint       = {1602.02120},
-timestamp    = {Fri, 14 Sep 2018 07:01:58 +0200},
-biburl       = {https://dblp.org/rec/journals/corr/BlellochFS16.bib},
-bibsource    = {dblp computer science bibliography, https://dblp.org}
+  author       = {Guy E. Blelloch and
+    Daniel Ferizovic and
+      Yihan Sun},
+  title        = {Parallel Ordered Sets Using Join},
+  journal      = {CoRR},
+  volume       = {abs/1602.02120},
+  year         = {2016},
+  url          = {http://arxiv.org/abs/1602.02120},
+  lastaccessed = "August 17, 2024",
+  eprinttype    = {arXiv},
+  eprint       = {1602.02120},
+  timestamp    = {Fri, 14 Sep 2018 07:01:58 +0200},
+  biburl       = {https://dblp.org/rec/journals/corr/BlellochFS16.bib},
+  bibsource    = {dblp computer science bibliography, https://dblp.org}
 }
 
 
 @article{HUET_1997,
-    title={The Zipper},
-    volume={7},
-    DOI={10.1017/S0956796897002864},
-    number={5},
-    journal={Journal of Functional
-        Programming},
-    author={HUET, GÉRARD},
-    year={1997},
-    pages={549–554},
-    url={https://www.cambridge.org/core/journals/journal-of-functional-programming/article/zipper/0C058890B8A9B588F26E6D68CF0CE204},
-lastaccessed = "August 17, 2024"
+  title={The Zipper},
+  volume={7},
+  DOI={10.1017/S0956796897002864},
+  number={5},
+  journal={Journal of Functional
+    Programming},
+  author={HUET, GÉRARD},
+  year={1997},
+  pages={549–554},
+  url={https://www.cambridge.org/core/journals/journal-of-functional-programming/article/zipper/0C058890B8A9B588F26E6D68CF0CE204},
+  lastaccessed = "August 17, 2024"
+}
+
+@article{doi:10.1137/0202005,
+  author = {Nievergelt, J. and Reingold, E. M.},
+  title = {Binary Search Trees of Bounded Balance},
+  journal = {SIAM Journal on Computing},
+  volume = {2},
+  number = {1},
+  pages = {33-43},
+  year = {1973},
+  doi = {10.1137/0202005},
+  url = {https://doi.org/10.1137/0202005},
+  lastaccessed = {August 17, 2024},
+  eprint = {https://doi.org/10.1137/0202005}
+}
+
+
+@article{HIRAI_YAMAMOTO_2011,
+  title={Balancing weight-balanced trees},
+  volume={21},
+  DOI={10.1017/S0956796811000104},
+  number={3},
+  journal={Journal of Functional Programming},
+  author={HIRAI, YOICHI and YAMAMOTO, KAZUHIKO},
+  year={2011},
+  pages={287–307}
+}
+
+@online{Janet,
+  author = {Calvin Rose et. al.},
+  year = 2018,
+       url = {https://janet-lang.org/},
+       lastaccessed = {August 17, 2024},
+       urldate = {August 17, 2024}
 }

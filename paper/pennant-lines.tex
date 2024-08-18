@@ -1,10 +1,14 @@
 \documentclass[sigconf]{acmart}
+\usepackage{listings}
 \usepackage{hyperref}
 \begin{document}
 
 \title{Pennant Lines: An Alternative to Finger Trees in Dynamic Environments}
 
 \author{Daniel Jay Haskin}
+
+\acmConference[ELS '25]{European Lisp Symposium}{May 15--23,
+  2025}{Vienna, Austria}
 \email{dan@djhaskin.com}
 \renewcommand{\shortauthors}{Haskin}
 
@@ -67,7 +71,7 @@ use with little regard for runtime. This is fine until the runtime becomes
 important; then ergonomics is sacrificed and the code is rewritten data
 structures which are faster, but less ergonomic.
 
-In this paper, we wish to implement a data structure with an API that imitates
+In this presentation, we will implement a data structure with an API that imitates
 the Common Lisp list API but in a way that is ergonomic, persistent by default,
 and dynamic. This means the resulting data structure must be usable as a list
 first, but sometimes also as a set or dictionary. By implementing functions
@@ -116,10 +120,11 @@ times by adding pennant lines to the mix.
 
 \subsection{The List API}
 
-The API for lists\cite{ANSI:1994:DPA} outlines three basic uses for lists:
+The Common Lisp Standard's API for lists\cite{ANSI:1994:DPA} outlines three
+basic uses for conses (among others):
 
 \begin{enumerate}
-    \item As sequences of items.
+    \item As sequences of items (speaking of "proper lists").
     \item As association structures.
     \item As sets.
 \end{enumerate}
@@ -129,20 +134,24 @@ persistent-by-default structure. Therefore, the following operations need to be
 supported:
 
 \begin{itemize}
-    \item Efficient random insertion, deletion, and access (IDA)
-    \item Efficient IDA at the ends
-    \item Efficient reduction
+    \item Efficient random insertion, deletion, and access, particularly at the
+        ends
+    \item Efficient reduction (using a \texttt{reduce}-like function)
     \item Efficient concatenation
     \item Efficient splitting / subsequencing
     \item Efficient set operations
 \end{itemize}
 
-These will be used separately or in combination depending on the API function.
+These will be used separately or in combination depending on the API function in
+which it is used.
+
+Then we implement the API on top of these basic operations, which will support
+sets, associative structures, and plain sequences of objects.
 
 \subsection{Observations about Ranked Binary Trees}
 
-We first note that the Hinze and Paterson's Finger Tree "monoid
-trick"\cite{Hinze-Paterson:FingerTree} can actually be done with any tree,
+We first note that the Hinze and Paterson's Finger Tree ``monoid
+trick''\cite{Hinze-Paterson:FingerTree} can actually be done with any tree,
 including a binary search tree.
 
 \begin{lstlisting}[caption={Our indexed binary tree type.}, label={lst:treestruct}, language=Lisp]
@@ -158,7 +167,7 @@ Throughout the rest of this paper, when discussing binary trees, we will use
 the definition in listing \ref{lst:treestruct}.
 
 Suppose each node in a binary search tree has also a `size` component. Then,
-provided an index into the tree, then insert, delete, and access operations can
+provided an index into the tree, insert, delete, and access operations can
 be done without comparing values in the tree to each other by instead comparing
 tree and subtree sizes to the currently given index. In this way, a value
 can be inserted, deleted, or accessed at the given index in logarithmic time.
@@ -198,6 +207,64 @@ there will be added polymorphism and hence complexity, but it will not be too
 much.
 
 
+\subsection{Sorted Mode: Speeding Up Set Operations}
+
+Binary trees are a good basis for our use case for another reason: there's
+nothing stopping us from treating these trees as "normal sorted sets" like the
+ones that are customarily kept inside trees (rather than sequences). Operating
+in a different mode on the same data structure, we could treat these "sequences"
+like sets, or these "sets" like sequences. In one mode, we insert by index; in
+another mode, we insert using a sort function that finds its way through the
+tree by comparing the given value to insert with its compatriots in the tree.
+This information could be given at runtime, using a \texttt{:sortfn <fn>}
+argument instead of an \texttt{:index <ind>} to one of our functions that
+operate on these pennants. Indexed binary search trees can be treated as a
+set or a sequence fluidly.
+
+When we insert, we provide a sort function instead of an index, and say that
+$<=$ is used for inserting into the left child instead of $<$, now we just have
+a "normal" multiset that can be merged using Guy Blelloch's stuff. We could
+also take an unsorted thing and run `sort` on it and that gives a new sequence
+that's sorted and immediately usable in "sorted mode".
+
+Further, if a \texttt{:sortfn <fn>} were given to some e.g. set operation
+function in our API, and was used throughout the life of the data structure, we
+could then treat the tree like an ordered set and use the set operations
+provided in \cite{DBLP:journals/corr/BlellochFS16} instead of treating the trees
+like fancy lists when implementing the set operations. If \texttt{:sortfn}
+parameter is not given, we may assume the tree is unordered, and we will just
+treat the trees like normal unordered sequences when performing set operations.
+
+\subsection{Picking the Binary Tree Balancing Algorithm}
+
+We have one more detail to add before our baseline can be complete, though. We
+must select a balancing algorithm for the tree.
+
+We select weight balanced trees. Weight-balanced trees were originally presented
+due to J. Nievergelt and E. M. Reingold\cite{doi:10.1137/0202005}, but most
+recently to Y. Hirai and K. Yamamoto\cite{HIRAI_YAMAMOTO_2011}. The advantage of
+weight balanced trees is that height of the trees are kept track using the size
+element, something the design already requires.
+
+The drawback is that height is
+roughly kept track of effectively using the most significant bit of the size of
+the tree. Thus, the ``taller'' the tree, the more bits are needed to represent
+size and overflows may occur. This is fine though, since we're in Common Lisp,
+since its numerical tower prevents all of that. Also, a tree of height e.g. 50
+is of roughly of size $2^48$ to $2^52$ with Hirai and Yamamoto's $<3,2>$ Weight
+Balanced Trees. This is both large enough to have few if any applications, but
+it is also small enough to fit in the mantissa of a 64-bit floating point
+integer. This means this strategy would work in most places, even in
+math-constrained ones like Janet\cite{Janet} or JavaScript.
+
+The other disadvantage is that integer multiplication is needed to get weights
+to balance, but with the parameters given by Hirai and Yamamoto it is a simple
+arithmetic shift followed by an addition (multiply by $3$) for $\Delta$ and a
+simple arithmetic shift for $\Gamma$, so that's not a problem either. (In 64-bit
+float languages, it's an increment of the exponent and addition or simply
+exponent increment, and is equally easy to do.)
+
+(Draft note, primer for WB trees goes here in the actual paper)
 
 \section{Tables}
 

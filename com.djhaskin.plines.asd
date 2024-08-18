@@ -8,7 +8,7 @@
                )
   :components ((:module "src"
           :components
-          ((:file "main"))))
+          ((:file "wbtrees"))))
   :description "Pennant Lines"
   :in-order-to (
                 (test-op (test-op "com.djhaskin.plines/tests"))))
@@ -23,7 +23,7 @@
 
   :components ((:module "test"
                 :components
-                ((:file "main"))))
+                ((:file "wbtrees"))))
   :description "Test system for Pennant Lines"
   :perform (asdf:test-op (op c)
 

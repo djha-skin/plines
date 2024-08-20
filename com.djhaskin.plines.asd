@@ -29,4 +29,4 @@
 
                          (uiop:symbol-call
                            :parachute
-                           :test :com.djhaskin.nrdl/tests)))
+                           :test :com.djhaskin.plines/tests/wbtrees)))

@@ -66,7 +66,7 @@
                             :size 17
                             :left nil
                             :right 23))))
-))
+
 (defparameter a (wbtrees:glue 15 nil nil))
 (defparameter b (wbtrees:glue 7 nil nil))
 (defparameter c (wbtrees:glue 87 nil nil))
@@ -98,13 +98,11 @@
                (eq e)
                (eq f)))
 
-
 (define-test "weight-balanced trees: basic functions: by-index"
   :parent basic-functions
   (true (< (wbtrees:by-index nil "foo" 0 3) 0))
   (true (> (wbtrees:by-index nil "foo" 3 0) 0))
   (true (= (wbtrees:by-index 'debate 'action 3 3) 0)))
-
 
 (define-test rotation-functions)
 
@@ -117,11 +115,12 @@
       (wbtrees:glue "Deli Market" nil nil)
       nil)))
 
-(define-test "weight-balanced trees: rotation functions: balanced-p"
+
+(define-test "weight-balanced trees: rotation functions: balanced-against"
   (true
-    (wbtrees::balanced-p nil nil))
+    (wbtrees::balanced-against nil nil))
   (true
-    (wbtrees::balanced-p
+    (wbtrees::balanced-against
       nil
       (wbtrees::make-node
         :value "Deli Market"
@@ -129,7 +128,7 @@
         :left nil
         :right nil)))
   (false
-    (wbtrees::balanced-p
+    (wbtrees::balanced-against
       nil
       (wbtrees::make-node
         :value "Deli Market"
@@ -168,27 +167,23 @@
                                   nil)))))))))
 
 (defparameter eight-element-result
-  #S(WBTREES::NODE
-      :VALUE 3
-      :SIZE 8
-      :LEFT #S(WBTREES::NODE
-                :VALUE 6
-                :SIZE 4
-                :LEFT #S(WBTREES::NODE
-                          :VALUE 7
-                          :SIZE 2
-                          :LEFT #S(WBTREES::NODE
-                                    :VALUE 8
-                                    :SIZE 1
-                                    :LEFT NIL
-                                    :RIGHT NIL)
-                          :RIGHT NIL)
-                :RIGHT #S(WBTREES::NODE :VALUE 4 :SIZE 1 :LEFT NIL :RIGHT NIL))
-      :RIGHT #S(WBTREES::NODE
-                 :VALUE 1
-                 :SIZE 3
-                 :LEFT #S(WBTREES::NODE :VALUE 2 :SIZE 1 :LEFT NIL :RIGHT NIL)
-                 :RIGHT #S(WBTREES::NODE :VALUE 5 :SIZE 1 :LEFT NIL :RIGHT NIL))))
+  (wbtrees:glue
+      3
+      (wbtrees:glue
+                6
+                (wbtrees:glue
+                          8
+                          nil
+                          (wbtrees:glue
+                                    7
+                                    nil
+                                    nil))
+                (wbtrees:glue 4 nil nil))
+      (wbtrees:glue
+                 1
+                 (wbtrees:glue 2 nil nil)
+                 (wbtrees:glue 5 nil nil))))
+
 
 (defparameter random-insert
               (wbtrees:ins
@@ -197,35 +192,28 @@
                 :index 5))
 
 (defparameter random-insert-result
-  #S(WBTREES::NODE
-      :VALUE 3
-      :SIZE 9
-      :LEFT #S(WBTREES::NODE
-                :VALUE 6
-                :SIZE 4
-                :LEFT #S(WBTREES::NODE
-                          :VALUE 7
-                          :SIZE 2
-                          :LEFT #S(WBTREES::NODE
-                                    :VALUE 8
-                                    :SIZE 1
-                                    :LEFT NIL
-                                    :RIGHT NIL)
-                          :RIGHT NIL)
-                :RIGHT #S(WBTREES::NODE :VALUE 4 :SIZE 1 :LEFT NIL :RIGHT NIL))
-      :RIGHT #S(WBTREES::NODE
-                 :VALUE 1
-                 :SIZE 4
-                 :LEFT #S(WBTREES::NODE
-                           :VALUE 9
-                           :SIZE 2
-                           :LEFT NIL
-                           :RIGHT #S(WBTREES::NODE
-                                      :VALUE 2
-                                      :SIZE 1
-                                      :LEFT NIL
-                                      :RIGHT NIL))
-                 :RIGHT #S(WBTREES::NODE :VALUE 5 :SIZE 1 :LEFT NIL :RIGHT NIL))))
+  (wbtrees:glue
+      3
+      (wbtrees:glue
+                6
+                (wbtrees:glue
+                          8
+                          nil
+                          (wbtrees:glue
+                                    7
+                                    nil
+                                    nil))
+                (wbtrees:glue 4 nil nil))
+      (wbtrees:glue
+                 1
+                 (wbtrees:glue
+                           9
+                           nil
+                           (wbtrees:glue
+                                      2
+                                      nil
+                                      nil))
+                 (wbtrees:glue 5 nil nil))))
 
 (defparameter
   eight-max
@@ -249,27 +237,22 @@
 
 (defparameter
   eight-max-result
-  #S(WBTREES::NODE
-      :VALUE 4
-      :SIZE 8
-      :LEFT #S(WBTREES::NODE
-                :VALUE 7
-                :SIZE 3
-                :LEFT #S(WBTREES::NODE :VALUE 8 :SIZE 1 :LEFT NIL :RIGHT NIL)
-                :RIGHT #S(WBTREES::NODE :VALUE 6 :SIZE 1 :LEFT NIL :RIGHT NIL))
-      :RIGHT #S(WBTREES::NODE
-                 :VALUE 2
-                 :SIZE 4
-                 :LEFT #S(WBTREES::NODE :VALUE 3 :SIZE 1 :LEFT NIL :RIGHT NIL)
-                 :RIGHT #S(WBTREES::NODE
-                            :VALUE 1
-                            :SIZE 2
-                            :LEFT NIL
-                            :RIGHT #S(WBTREES::NODE
-                                       :VALUE 5
-                                       :SIZE 1
-                                       :LEFT NIL
-                                       :RIGHT NIL)))))
+  (wbtrees:glue
+      4
+      (wbtrees:glue
+                7
+                (wbtrees:glue 8 nil nil)
+                (wbtrees:glue 6 nil nil))
+      (wbtrees:glue
+                 2
+                 (wbtrees:glue 3 nil nil)
+                 (wbtrees:glue
+                            1
+                            nil
+                            (wbtrees:glue
+                                       5
+                                       nil
+                                       nil)))))
 
 (define-test fold-functions)
 
@@ -302,8 +285,8 @@
     eight-element-result)
   (is
     equalp
-    eight-element
-    (wbtrees:ins-min
+    (wbtrees:foldr eight-element)
+    (wbtrees:foldr (wbtrees:ins-min
       8
       (wbtrees:ins-min
         7
@@ -319,7 +302,7 @@
                   1
                   (wbtrees:ins-min
                     5
-                    nil)))))))))
+                    nil))))))))))
   (is
     equalp
     random-insert-result
@@ -327,83 +310,65 @@
   (is
     equalp
     (wbtrees:ins "four" random-insert-result :index 18)
-    #S(WBTREES::NODE
-        :VALUE 3
-        :SIZE 10
-        :LEFT #S(WBTREES::NODE
-                  :VALUE 6
-                  :SIZE 4
-                  :LEFT #S(WBTREES::NODE
-                            :VALUE 7
-                            :SIZE 2
-                            :LEFT #S(WBTREES::NODE
-                                      :VALUE 8
-                                      :SIZE 1
-                                      :LEFT NIL
-                                      :RIGHT NIL)
-                            :RIGHT NIL)
-                  :RIGHT #S(WBTREES::NODE :VALUE 4 :SIZE 1 :LEFT NIL :RIGHT NIL))
-        :RIGHT #S(WBTREES::NODE
-                   :VALUE 1
-                   :SIZE 5
-                   :LEFT #S(WBTREES::NODE
-                             :VALUE 9
-                             :SIZE 2
-                             :LEFT NIL
-                             :RIGHT #S(WBTREES::NODE
-                                        :VALUE 2
-                                        :SIZE 1
-                                        :LEFT NIL
-                                        :RIGHT NIL))
-                   :RIGHT #S(WBTREES::NODE
-                              :VALUE 5
-                              :SIZE 2
-                              :LEFT NIL
-                              :RIGHT #S(WBTREES::NODE
-                                         :VALUE "four"
-                                         :SIZE 1
-                                         :LEFT NIL
-                                         :RIGHT NIL)))))
+    (wbtrees:glue
+        3
+        (wbtrees:glue
+                  6
+                  (wbtrees:glue
+                            8
+                            nil
+                            (wbtrees:glue
+                                      7
+                                      nil
+                                      nil))
+                  (wbtrees:glue 4 nil nil))
+        (wbtrees:glue
+                   1
+                   (wbtrees:glue
+                             9
+                             nil
+                             (wbtrees:glue
+                                        2
+                                        nil
+                                        nil))
+                   (wbtrees:glue
+                              5
+                              nil
+                              (wbtrees:glue
+                                         "four"
+                                         nil
+                                         nil)))))
   (is
     equalp
     (wbtrees:ins nil random-insert-result :index 18)
-    #S(WBTREES::NODE
-        :VALUE 3
-        :SIZE 10
-        :LEFT #S(WBTREES::NODE
-                  :VALUE 6
-                  :SIZE 4
-                  :LEFT #S(WBTREES::NODE
-                            :VALUE 7
-                            :SIZE 2
-                            :LEFT #S(WBTREES::NODE
-                                      :VALUE 8
-                                      :SIZE 1
-                                      :LEFT NIL
-                                      :RIGHT NIL)
-                            :RIGHT NIL)
-                  :RIGHT #S(WBTREES::NODE :VALUE 4 :SIZE 1 :LEFT NIL :RIGHT NIL))
-        :RIGHT #S(WBTREES::NODE
-                   :VALUE 1
-                   :SIZE 5
-                   :LEFT #S(WBTREES::NODE
-                             :VALUE 9
-                             :SIZE 2
-                             :LEFT NIL
-                             :RIGHT #S(WBTREES::NODE
-                                        :VALUE 2
-                                        :SIZE 1
-                                        :LEFT NIL
-                                        :RIGHT NIL))
-                   :RIGHT #S(WBTREES::NODE
-                              :VALUE 5
-                              :SIZE 2
-                              :LEFT NIL
-                              :RIGHT #S(WBTREES::NODE
-                                         :VALUE NIL
-                                         :SIZE 1
-                                         :LEFT NIL
-                                         :RIGHT NIL))))))
+    (wbtrees:glue
+        3
+        (wbtrees:glue
+                  6
+                  (wbtrees:glue
+                            8
+                            nil
+                            (wbtrees:glue
+                                      7
+                                      nil
+                                      nil))
+                  (wbtrees:glue 4 nil nil))
+        (wbtrees:glue
+                   1
+                   (wbtrees:glue
+                             9
+                             nil
+                             (wbtrees:glue
+                                        2
+                                        nil
+                                        nil))
+                   (wbtrees:glue
+                              5
+                              nil
+                              (wbtrees:glue
+                                         nil
+                                         nil
+                                         nil))))))
 
 (defun by-int (candidate resident index size)
   (declare (ignore index size))
@@ -440,72 +405,55 @@
   (is
     equalp
     ins-by-int
-    #S(WBTREES::NODE
-        :VALUE 3
-        :SIZE 8
-        :LEFT
-        #S(WBTREES::NODE
-            :VALUE -1
-            :SIZE 3
-            :LEFT NIL
-            :RIGHT #S(WBTREES::NODE
-                       :VALUE 2
-                       :SIZE 2
-                       :LEFT #S(WBTREES::NODE
-                                 :VALUE 1
-                                 :SIZE 1
-                                 :LEFT NIL
-                                 :RIGHT NIL)
-                       :RIGHT NIL))
-        :RIGHT
-        #S(WBTREES::NODE
-            :VALUE 6
-            :SIZE 4
-            :LEFT #S(WBTREES::NODE
-                      :VALUE 5
-                      :SIZE 2
-                      :LEFT #S(WBTREES::NODE
-                                :VALUE 4
-                                :SIZE 1
-                                :LEFT NIL
-                                :RIGHT NIL)
-                      :RIGHT NIL)
-            :RIGHT #S(WBTREES::NODE :VALUE 8 :SIZE 1 :LEFT NIL :RIGHT NIL))))
+    (wbtrees:glue
+        3
+        (wbtrees:glue
+            -1
+            nil
+            (wbtrees:glue
+                       2
+                       (wbtrees:glue
+                                 1
+                                 nil
+                                 nil)
+                       nil))
+        (wbtrees:glue
+            6
+            (wbtrees:glue
+                      5
+                      (wbtrees:glue
+                                4
+                                nil
+                                nil)
+                      nil)
+            (wbtrees:glue 8 nil nil))))
   (is equalp
       (wbtrees:ins 5 ins-by-int :cmp #'by-int)
-      #S(WBTREES::NODE
-          :VALUE 3
-          :SIZE 9
-          :LEFT #S(WBTREES::NODE
-                    :VALUE -1
-                    :SIZE 3
-                    :LEFT NIL
-                    :RIGHT #S(WBTREES::NODE
-                               :VALUE 2
-                               :SIZE 2
-                               :LEFT #S(WBTREES::NODE
-                                         :VALUE 1
-                                         :SIZE 1
-                                         :LEFT NIL
-                                         :RIGHT NIL)
-                               :RIGHT NIL))
-          :RIGHT #S(WBTREES::NODE
-                     :VALUE 6
-                     :SIZE 5
-                     :LEFT #S(WBTREES::NODE
-                               :VALUE 5
-                               :SIZE 3
-                               :LEFT #S(WBTREES::NODE
-                                         :VALUE 4
-                                         :SIZE 1
-                                         :LEFT NIL
-                                         :RIGHT NIL)
-                               :RIGHT #S(WBTREES::NODE
-                                          :VALUE 5
-                                          :SIZE 1
-                                          :LEFT NIL
-                                          :RIGHT NIL))
-                     :RIGHT #S(WBTREES::NODE :VALUE 8 :SIZE 1 :LEFT NIL :RIGHT NIL))))
+      (wbtrees:glue
+          3
+          (wbtrees:glue
+                    -1
+                    nil
+                    (wbtrees:glue
+                               2
+                               (wbtrees:glue
+                                         1
+                                         nil
+                                         nil)
+                               nil))
+          (wbtrees:glue
+                     6
+                     (wbtrees:glue
+                               5
+                               (wbtrees:glue
+                                         4
+                                         nil
+                                         nil)
+                               (wbtrees:glue
+                                          5
+                                          nil
+                                          nil))
+                     (wbtrees:glue 8 nil nil))))
   (is
     eq
     (wbtrees:ins 5 ins-by-int :cmp #'by-int :allow-duplicates nil)
@@ -520,82 +468,78 @@
                         :index 5)
       2)
   (is eql
-      (wbtrees:retrieve nil :index -3 :sentinel :lolnope)
-      :lolnope)
+      (wbtrees:retrieve nil :index -3 :sentinel :not-found)
+      :not-found)
   (is eql
       (wbtrees:retrieve eight-max-result
-                        :index -3 :sentinel :lolnope)
-      :lolnope))
+                        :index -3 :sentinel :not-found)
+      :not-found))
 
 (define-test removal-functions)
 
 (define-test "weight-balanced trees: removal-functions: basic tests"
   :parent removal-functions
   (is-values
-    (wbtrees:rm nil :sentinel :lolnope)
+    (wbtrees:rm nil :sentinel :not-found)
     (eq nil)
-    (eql :lolnope))
+    (eql :not-found))
   (is-values
-    (wbtrees:rm one-element :index -8 :sentinel :lolnope)
+    (wbtrees:rm-max nil :sentinel :not-found)
+    (eq nil)
+    (eql :not-found))
+  (is-values
+    (wbtrees:rm-max nil :sentinel :not-found)
+    (eq nil)
+    (eql :not-found))
+  (is-values
+    (wbtrees:rm one-element :index -8 :sentinel :not-found)
     ;; TODO: make `eq` work
     (equalp one-element)
-    (eql :lolnope))
+    (eql :not-found))
   (is-values
     (wbtrees:rm eight-element :index 4)
-    (equalp #S(WBTREES::NODE
-                :VALUE 2
-                :SIZE 7
-                :LEFT #S(WBTREES::NODE
-                          :VALUE 6
-                          :SIZE 4
-                          :LEFT #S(WBTREES::NODE
-                                    :VALUE 7
-                                    :SIZE 2
-                                    :LEFT #S(WBTREES::NODE
-                                              :VALUE 8
-                                              :SIZE 1
-                                              :LEFT NIL
-                                              :RIGHT NIL)
-                                    :RIGHT NIL)
-                          :RIGHT #S(WBTREES::NODE :VALUE 4 :SIZE 1 :LEFT NIL :RIGHT NIL))
-                :RIGHT #S(WBTREES::NODE
-                           :VALUE 1
-                           :SIZE 2
-                           :LEFT NIL
-                           :RIGHT #S(WBTREES::NODE :VALUE 5 :SIZE 1 :LEFT NIL :RIGHT NIL))))
+    (equalp (wbtrees:glue
+                2
+                (wbtrees:glue
+                          6
+                          (wbtrees:glue
+                                    8
+                                    nil
+                                    (wbtrees:glue
+                                              7
+                                              nil
+                                              nil))
+                          (wbtrees:glue 4 nil nil))
+                (wbtrees:glue
+                           1
+                           nil
+                           (wbtrees:glue 5 nil nil))))
     (eql 3))
   (is-values
     (wbtrees:rm-max (wbtrees:rm-max (wbtrees:rm-max eight-element)))
-    (equalp #S(WBTREES::NODE
-                :VALUE 6
-                :SIZE 5
-                :LEFT #S(WBTREES::NODE
-                          :VALUE 7
-                          :SIZE 2
-                          :LEFT #S(WBTREES::NODE :VALUE 8 :SIZE 1 :LEFT NIL :RIGHT NIL)
-                          :RIGHT NIL)
-                :RIGHT #S(WBTREES::NODE
-                           :VALUE 3
-                           :SIZE 2
-                           :LEFT #S(WBTREES::NODE :VALUE 4 :SIZE 1 :LEFT NIL :RIGHT NIL)
-                           :RIGHT NIL)))
+    (equalp (wbtrees:glue
+                6
+                (wbtrees:glue
+                          8
+                          nil
+                          (wbtrees:glue 7 nil nil))
+                (wbtrees:glue
+                           3
+                           (wbtrees:glue 4 nil nil)
+                           nil)))
     (eql 2))
-
   (is-values (wbtrees:rm-min eight-element)
              (equalp
-               #S(WBTREES::NODE
-                   :VALUE 3
-                   :SIZE 7
-                   :LEFT #S(WBTREES::NODE
-                             :VALUE 6
-                             :SIZE 3
-                             :LEFT #S(WBTREES::NODE :VALUE 7 :SIZE 1 :LEFT NIL :RIGHT NIL)
-                             :RIGHT #S(WBTREES::NODE :VALUE 4 :SIZE 1 :LEFT NIL :RIGHT NIL))
-                   :RIGHT #S(WBTREES::NODE
-                              :VALUE 1
-                              :SIZE 3
-                              :LEFT #S(WBTREES::NODE :VALUE 2 :SIZE 1 :LEFT NIL :RIGHT NIL)
-                              :RIGHT #S(WBTREES::NODE :VALUE 5 :SIZE 1 :LEFT NIL :RIGHT NIL))))
+               (wbtrees:glue
+                   3
+                   (wbtrees:glue
+                             6
+                             (wbtrees:glue 7 nil nil)
+                             (wbtrees:glue 4 nil nil))
+                   (wbtrees:glue
+                              1
+                              (wbtrees:glue 2 nil nil)
+                              (wbtrees:glue 5 nil nil))))
              (eql 8))
   (is-values (wbtrees:rm-min one-element)
              (eq nil)
@@ -604,5 +548,109 @@
              (eq nil)
              (eql 5)))
 
+(defparameter right-dangerous
+  (wbtrees:glue
+      3
+      (wbtrees:glue
+                6
+                (wbtrees:glue
+                          7
+                          (wbtrees:glue
+                                    8
+                                    nil
+                                    nil)
+                          (wbtrees:glue
+                                     81
+                                     nil
+                                     nil))
+                (wbtrees:glue 4 nil nil))
+      (wbtrees:glue
+                 1
+                 nil
+                 nil)))
+
+(define-test "weight-balanced trees: removal-functions: right-dangerous tests"
+  (is-values
+    (wbtrees:rm-max right-dangerous)
+    (equalp
+      (wbtrees:glue
+          6
+          (wbtrees:glue
+                    7
+                    (wbtrees:glue 8 nil nil)
+                    (wbtrees:glue 81 nil nil))
+          (wbtrees:glue
+                     3
+                     (wbtrees:glue 4 nil nil)
+                     nil)))
+    (eql 1))
+  (is-values
+    (wbtrees:rm-min right-dangerous)
+    (equalp
+      (wbtrees:glue
+          3
+          (wbtrees:glue
+                    6
+                    (wbtrees:glue
+                              7
+                              nil
+                              (wbtrees:glue
+                                         81
+                                         nil
+                                         nil))
+                    (wbtrees:glue 4 nil nil))
+          (wbtrees:glue 1 nil nil)))
+    (eql 8))
+  (is-values (wbtrees:rm right-dangerous :index 3)
+             (equalp
+               (wbtrees:glue
+                   3
+                   (wbtrees:glue
+                             7
+                             (wbtrees:glue 8 nil nil)
+                             (wbtrees:glue
+                                        4
+                                        (wbtrees:glue
+                                                  81
+                                                  nil
+                                                  nil)
+                                        nil))
+                   (wbtrees:glue 1 nil nil)))
+             (eql 6))
+  (is-values (wbtrees:rm right-dangerous :index 5)
+             (equalp
+               (wbtrees:glue
+                   6
+                   (wbtrees:glue
+                             7
+                             (wbtrees:glue 8 nil nil)
+                             (wbtrees:glue 81 nil nil))
+                   (wbtrees:glue
+                              1
+                              (wbtrees:glue 4 nil nil)
+                              nil)))
+             (eql 3)))
+
 (define-test "weight-balanced trees: removal-functions: set tests"
-     
+  :parent removal-functions
+  (is-values (wbtrees:rm ins-by-int
+                         :val 5
+                         :cmp #'by-int)
+             (equalp
+               (wbtrees:glue
+                   3
+                   (wbtrees:glue
+                             -1
+                             nil
+                             (wbtrees:glue
+                                        2
+                                        (wbtrees:glue
+                                                  1
+                                                  nil
+                                                  nil)
+                                        nil))
+                   (wbtrees:glue
+                              6
+                              (wbtrees:glue 4 nil nil)
+                              (wbtrees:glue 8 nil nil))))
+             (eql 5)))

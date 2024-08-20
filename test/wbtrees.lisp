@@ -8,6 +8,7 @@
 
 (progn
   (declaim (optimize (speed 0) (space 0) (debug 3)))
+
   (progn
 
     (asdf:load-system "parachute")
@@ -66,6 +67,36 @@
                             :left nil
                             :right 23))))
 
+(defparameter a (wbtrees:glue 15 nil nil))
+(defparameter b (wbtrees:glue 7 nil nil))
+(defparameter c (wbtrees:glue 87 nil nil))
+(defparameter d (wbtrees:glue 81 nil nil))
+(defparameter e (wbtrees:glue 10 c d))
+(defparameter f (wbtrees:glue 08 a b))
+(defparameter g (wbtrees:glue 5 e f))
+
+(define-test "weight-balanced trees: glue, unglue, and size"
+  :parent basic-functions
+    (is eql
+        (wbtrees:size nil)
+        0)
+    (is eql
+        (wbtrees:size a)
+        1)
+    (is eql
+        (wbtrees:size e)
+        (wbtrees:size f))
+    (is eql
+        (wbtrees:size g)
+        7)
+    (is-values (wbtrees:unglue a)
+               (= 15)
+               (eq nil)
+               (eq nil))
+    (is-values (wbtrees:unglue g)
+               (= 5)
+               (eq e)
+               (eq f)))
 
 
 (define-test "weight-balanced trees: basic functions: by-index"
@@ -83,11 +114,7 @@
       (wbtrees::single-rotation-p nil nil))
   (false
     (wbtrees::single-rotation-p
-      (wbtrees::make-node
-        :value "Deli Market"
-        :size 1
-        :left nil
-        :right nil)
+      (wbtrees:glue "Deli Market" nil nil)
       nil)))
 
 (define-test "weight-balanced trees: rotation functions: balanced-p"
@@ -119,379 +146,315 @@
                  :right nil)))))
 
 
+(defparameter one-element (wbtrees:ins 5 nil))
 
-(test *)
+(defparameter eight-element
+                  (wbtrees:ins
+                    8
+                    (wbtrees:ins
+                      7
+                      (wbtrees:ins
+                        6
+                        (wbtrees:ins
+                          4
+                          (wbtrees:ins
+                            3
+                            (wbtrees:ins
+                              2
+                              (wbtrees:ins
+                                1
+                                (wbtrees:ins
+                                  5
+                                  nil)))))))))
 
+(defparameter eight-element-result
+  #S(WBTREES::NODE
+      :VALUE 3
+      :SIZE 8
+      :LEFT #S(WBTREES::NODE
+                :VALUE 6
+                :SIZE 4
+                :LEFT #S(WBTREES::NODE
+                          :VALUE 7
+                          :SIZE 2
+                          :LEFT #S(WBTREES::NODE
+                                    :VALUE 8
+                                    :SIZE 1
+                                    :LEFT NIL
+                                    :RIGHT NIL)
+                          :RIGHT NIL)
+                :RIGHT #S(WBTREES::NODE :VALUE 4 :SIZE 1 :LEFT NIL :RIGHT NIL))
+      :RIGHT #S(WBTREES::NODE
+                 :VALUE 1
+                 :SIZE 3
+                 :LEFT #S(WBTREES::NODE :VALUE 2 :SIZE 1 :LEFT NIL :RIGHT NIL)
+                 :RIGHT #S(WBTREES::NODE :VALUE 5 :SIZE 1 :LEFT NIL :RIGHT NIL))))
 
+(defparameter random-insert
+              (wbtrees:ins
+                9
+                eight-element
+                :index 5))
 
+(defparameter random-insert-result
+  #S(WBTREES::NODE
+      :VALUE 3
+      :SIZE 9
+      :LEFT #S(WBTREES::NODE
+                :VALUE 6
+                :SIZE 4
+                :LEFT #S(WBTREES::NODE
+                          :VALUE 7
+                          :SIZE 2
+                          :LEFT #S(WBTREES::NODE
+                                    :VALUE 8
+                                    :SIZE 1
+                                    :LEFT NIL
+                                    :RIGHT NIL)
+                          :RIGHT NIL)
+                :RIGHT #S(WBTREES::NODE :VALUE 4 :SIZE 1 :LEFT NIL :RIGHT NIL))
+      :RIGHT #S(WBTREES::NODE
+                 :VALUE 1
+                 :SIZE 4
+                 :LEFT #S(WBTREES::NODE
+                           :VALUE 9
+                           :SIZE 2
+                           :LEFT NIL
+                           :RIGHT #S(WBTREES::NODE
+                                      :VALUE 2
+                                      :SIZE 1
+                                      :LEFT NIL
+                                      :RIGHT NIL))
+                 :RIGHT #S(WBTREES::NODE :VALUE 5 :SIZE 1 :LEFT NIL :RIGHT NIL))))
 
-(define-test "extraction-errors: simple cases"
-  :parent extraction-errors
-  (is equal
-      "Expected one of `a`, `b`, `c` or `Space`; got `d`"
-      (format nil "~A"
-              (make-condition
-                'plines:extraction-error
-                :expected '(#\a #\b #\c #\Space)
-                :got #\d)))
+(defparameter
+  eight-max
+  (wbtrees:ins-max
+    5
+    (wbtrees:ins-max
+      1
+      (wbtrees:ins-max
+        2
+        (wbtrees:ins-max
+          3
+          (wbtrees:ins-max
+            4
+            (wbtrees:ins-max
+              6
+              (wbtrees:ins-max
+                7
+                (wbtrees:ins-max
+                  8
+                  nil)))))))))
 
-  (is equal
-      "Expected nothing; got `d`"
-      (format nil "~A"
-              (make-condition 'plines:extraction-error
-                              :expected '()
-                              :got #\d)))
-  (is equal
-      "Expected one of `a` or `Space`; got `d`"
-      (format nil "~A"
-              (make-condition
-                'plines:extraction-error
-                :expected '(#\a #\Space)
-                :got #\d)))
-  (is equal
-      "Expected `Newline`; got `d`"
-      (format nil "~A"
-              (make-condition
-                'plines:extraction-error
-                :expected '(#\Newline)
-                :got #\d)))
-  (is equal
-      "Expected one of `EOF`, `Newline`, `:`, `,` or `start of number`; got `d`"
-      (format nil "~A"
-              (make-condition
-                'plines:extraction-error
-                :expected '(:eof #\Newline #\: #\, "start of number")
-                :got #\d))))
+(defparameter
+  eight-max-result
+  #S(WBTREES::NODE
+      :VALUE 4
+      :SIZE 8
+      :LEFT #S(WBTREES::NODE
+                :VALUE 7
+                :SIZE 3
+                :LEFT #S(WBTREES::NODE :VALUE 8 :SIZE 1 :LEFT NIL :RIGHT NIL)
+                :RIGHT #S(WBTREES::NODE :VALUE 6 :SIZE 1 :LEFT NIL :RIGHT NIL))
+      :RIGHT #S(WBTREES::NODE
+                 :VALUE 2
+                 :SIZE 4
+                 :LEFT #S(WBTREES::NODE :VALUE 3 :SIZE 1 :LEFT NIL :RIGHT NIL)
+                 :RIGHT #S(WBTREES::NODE
+                            :VALUE 1
+                            :SIZE 2
+                            :LEFT NIL
+                            :RIGHT #S(WBTREES::NODE
+                                       :VALUE 5
+                                       :SIZE 1
+                                       :LEFT NIL
+                                       :RIGHT NIL)))))
 
-(define-test nested-to-alist)
+(define-test fold-functions)
 
-(define-test "nested-to-alist: empty cases"
-  :parent nested-to-alist
-  (is eq nil (plines:nested-to-alist nil))
-  (is equal "" (plines:nested-to-alist "")))
-
-(define-test "nested-to-alist: atomic values"
-  :parent nested-to-alist
-  (is equal "hi" (plines:nested-to-alist "hi"))
-  (is equal 15 (plines:nested-to-alist 15))
-  (is equal t (plines:nested-to-alist t))
-  (is equal 'a (plines:nested-to-alist 'a))
-  (is equal :b (plines:nested-to-alist :b)))
-
-(define-test "nested-to-alist: typical invocations"
-  :parent nested-to-alist
+(define-test "weight-balanced trees: fold functions"
+  :parent fold-functions
   (is
     equal
-    '(1 2 3 (4 5) 6 (7 (8 ((A . 1) (B . 2) (C . 3)))))
-    (let
-        ((a (make-hash-table)))
-      (setf (gethash 'a a) 1)
-      (setf (gethash 'b a) 2)
-      (setf (gethash 'c a) 3)
-      (plines:nested-to-alist
-        `(1 2 3 (4 5) 6 (7 (8 ,a))))))
-  (is equal
-      '((A)
-        (B
-          (:DESTINATION . "yon")
-          (:ORIGIN . "thither")) (C 1 2 3 4 5))
-      (let ((a (make-hash-table))
-            (b (make-hash-table)))
-        (setf (gethash :origin b) "thither")
-        (setf (gethash :destination b) "yon")
-        (setf (gethash 'a a) nil)
-        (setf (gethash 'b a) b)
-        (setf (gethash 'c a) '(1 2 3 4 5))
-        (plines:nested-to-alist a))
-      ))
+    '(5 1 2 3 4 6 7 8)
+    (wbtrees:foldl eight-max-result nil #'cons))
+  (is
+    equal
+    '(8 7 6 4 3 2 1 5)
+    (wbtrees:foldr eight-max-result nil #'cons))
+  (is
+    equal
+    (wbtrees:foldl eight-max-result)
+    (wbtrees:foldl eight-element nil #'cons)))
 
-(define-test parse-tests)
+(define-test insert-functions)
 
-(define-test "parse: empty"
-  :parent parse-tests
-  (handler-case
-      (progn
-        (with-input-from-string (strm "")
-          (plines:parse-from strm))
-        (fail "Should have thrown an error"))
-    (plines:extraction-error (e) (true e))
-    (t (e) (declare (ignore e)) (fail "Should have thrown an extradction error"))))
+(define-test "weight-balanced trees: insert-functions: basic tests"
+  :parent insert-functions
+  (is
+    eql
+    (wbtrees:size one-element)
+    1)
+  (is
+    equalp
+    eight-element
+    eight-element-result)
+  (is
+    equalp
+    eight-element
+    (wbtrees:ins-min
+      8
+      (wbtrees:ins-min
+        7
+        (wbtrees:ins-min
+          6
+          (wbtrees:ins-min
+            4
+            (wbtrees:ins-min
+              3
+              (wbtrees:ins-min
+                2
+                (wbtrees:ins-min
+                  1
+                  (wbtrees:ins-min
+                    5
+                    nil)))))))))
+  (is
+    equalp
+    random-insert-result
+    random-insert)
+  (is
+    equalp
+    (wbtrees:ins "four" random-insert-result :index 18)
+    #S(WBTREES::NODE
+        :VALUE 3
+        :SIZE 10
+        :LEFT #S(WBTREES::NODE
+                  :VALUE 6
+                  :SIZE 4
+                  :LEFT #S(WBTREES::NODE
+                            :VALUE 7
+                            :SIZE 2
+                            :LEFT #S(WBTREES::NODE
+                                      :VALUE 8
+                                      :SIZE 1
+                                      :LEFT NIL
+                                      :RIGHT NIL)
+                            :RIGHT NIL)
+                  :RIGHT #S(WBTREES::NODE :VALUE 4 :SIZE 1 :LEFT NIL :RIGHT NIL))
+        :RIGHT #S(WBTREES::NODE
+                   :VALUE 1
+                   :SIZE 5
+                   :LEFT #S(WBTREES::NODE
+                             :VALUE 9
+                             :SIZE 2
+                             :LEFT NIL
+                             :RIGHT #S(WBTREES::NODE
+                                        :VALUE 2
+                                        :SIZE 1
+                                        :LEFT NIL
+                                        :RIGHT NIL))
+                   :RIGHT #S(WBTREES::NODE
+                              :VALUE 5
+                              :SIZE 2
+                              :LEFT NIL
+                              :RIGHT #S(WBTREES::NODE
+                                         :VALUE "four"
+                                         :SIZE 1
+                                         :LEFT NIL
+                                         :RIGHT NIL)))))
+  (is
+    equalp
+    (wbtrees:ins nil random-insert-result :index 18)
+    #S(WBTREES::NODE
+        :VALUE 3
+        :SIZE 10
+        :LEFT #S(WBTREES::NODE
+                  :VALUE 6
+                  :SIZE 4
+                  :LEFT #S(WBTREES::NODE
+                            :VALUE 7
+                            :SIZE 2
+                            :LEFT #S(WBTREES::NODE
+                                      :VALUE 8
+                                      :SIZE 1
+                                      :LEFT NIL
+                                      :RIGHT NIL)
+                            :RIGHT NIL)
+                  :RIGHT #S(WBTREES::NODE :VALUE 4 :SIZE 1 :LEFT NIL :RIGHT NIL))
+        :RIGHT #S(WBTREES::NODE
+                   :VALUE 1
+                   :SIZE 5
+                   :LEFT #S(WBTREES::NODE
+                             :VALUE 9
+                             :SIZE 2
+                             :LEFT NIL
+                             :RIGHT #S(WBTREES::NODE
+                                        :VALUE 2
+                                        :SIZE 1
+                                        :LEFT NIL
+                                        :RIGHT NIL))
+                   :RIGHT #S(WBTREES::NODE
+                              :VALUE 5
+                              :SIZE 2
+                              :LEFT NIL
+                              :RIGHT #S(WBTREES::NODE
+                                         :VALUE NIL
+                                         :SIZE 1
+                                         :LEFT NIL
+                                         :RIGHT NIL))))))
 
-(define-test "parse: simple"
-  :parent parse-tests
-  (is equal
-      '(:a)
-      (with-input-from-string (strm "[a]")
-        (plines:parse-from strm))))
+(define-test retrieve-functions)
 
-(defparameter *sparrow*
-  "
-  # What now brown cow
-  {
-  the-wind \"bullseye\"
-  the-trees false
-  the-sparrows his-eye
-  poem
-  # I don't know if you can hear me
-  |His eyee
-  # or if
-  # you're even there
-  |is on
-  # I don't know if you can listen
-  |The sparrow
-  ^
+(define-test "weight-balanced trees: retrieve functions"
+  :parent retrieve-functions
+  (is eql
+      (wbtrees:retrieve eight-max-result
+                        :index 5)
+      2)
+  (is eql
+      (wbtrees:retrieve nil :index -3 :sentinel :lolnope)
+      :lolnope)
+  (is eql
+      (wbtrees:retrieve eight-max-result
+                        :index -3 :sentinel :lolnope)
+      :lolnope))
 
-  # to a gypsy's prayer
-
-  this-should-still-work 15.0
-  other
-  |And I know
-  |He's watching
-  |Over me
-  ^
-
-  `force push`
-  >I sing
-  >because
-  >I'm happy
-  ^
-
-  \"i am mordac\" true
-  \"I am web mistress ming\" false
-  \"you are so wrong\" null
-  wendover [
-  {
-  so 1
-  much -10
-  gambling 100
-  but 1000
-  also -1000
-  apparently 10000
-  paramedics -10000
-  and 1.01
-  }
-  {
-  die in
-  a fire
-  }
-  15
-  |this
-  |that
-  ^
-  \"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\"
-  ]
-  }")
-
-(defparameter *sparrow-alist*
-  `((:|FORCE PUSH|
-                                                   . "I sing because I'm happy")
-    ("I am web mistress ming")
-    (:OTHER . ,(format nil "~@{~A~^~%~}"
-                                                            "And I know"
-                                                            "He's watching"
-                                                            "Over me"))
-    (:POEM . ,(format nil "~@{~A~^~%~}"
-                                                           "His eyee"
-                                                           "is on"
-                                                           "The sparrow"))
-    (:THE-SPARROWS
-      . :HIS-EYE)
-    (:THE-TREES)
-    (:THE-WIND . "bullseye")
-    (:THIS-SHOULD-STILL-WORK . 15.0)
-    (:WENDOVER
-      ((:ALSO . -1000)
-       (:AND . 1.01)
-       (:APPARENTLY . 10000)
-       (:BUT . 1000)
-       (:GAMBLING . 100)
-       (:MUCH . -10)
-       (:PARAMEDICS . -10000)
-       (:SO . 1))
-      ((:A
-         . :FIRE)
-       (:DIE
-         . :IN))
-      15 ,(format nil "~@{~A~^~%~}" "this" "that")
-      ,(format
-         nil "~@{~A~^ ~}"
-         "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do"
-         "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim"
-         "ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut"
-         "aliquip ex ea commodo consequat. Duis aute irure dolor in"
-         "reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla"
-         "pariatur. Excepteur sint occaecat cupidatat non proident, sunt in"
-         "culpa qui officia deserunt mollit anim id est laborum."))
-    ("i am mordac" . T) ("you are so wrong" . CL:NULL)))
-
-(define-test "parse: more general case"
-  :parent parse-tests
-           (is equal
-                 (plines:nested-to-alist
-                   (with-input-from-string
-                     (strm *sparrow*)
-                     (plines:parse-from strm)))
-    *sparrow-alist*))
-
-(define-test json-generate-test)
-
-(define-test "json: simple example of json"
-  :parent json-generate-test
-    (is equal
-    (with-output-to-string (strm)
-      (plines:generate-to strm
-                        (alexandria:alist-hash-table
-                          `((:a . 1)
-                            (:b . (:x :y :z))
-                            (:c . ("food" "for" "thought"))
-                            (:d . cl:null)
-                            (:e . ,nil)
-                            (:f . t)
-                            (:g . 0.87)))
-                        :pretty-indent 4
-                        :json-mode t))
-"{
-    \"a\": 1,
-    \"b\": [
-        \"x\",
-        \"y\",
-        \"z\"
-    ],
-    \"c\": [
-        \"food\",
-        \"for\",
-        \"thought\"
-    ],
-    \"d\": null,
-    \"e\": false,
-    \"f\": true,
-    \"g\": 0.87
-}"))
-
-(defparameter *sparrow-object* (with-input-from-string
-                                  (strm *sparrow*)
-                                  (plines:parse-from strm)))
-
-(defparameter *pretty-sparrow*
-"{
-    `force push` \"I sing because I'm happy\"
-    \"I am web mistress ming\" false
-    other
-        |And I know
-        |He's watching
-        |Over me
-        ^
-    poem
-        |His eyee
-        |is on
-        |The sparrow
-        ^
-    the-sparrows his-eye
-    the-trees false
-    the-wind \"bullseye\"
-    this-should-still-work 15.0
-    wendover [
-        {
-            also -1000
-            and 1.01
-            apparently 10000
-            but 1000
-            gambling 100
-            much -10
-            paramedics -10000
-            so 1
-        }
-        {
-            a fire
-            die in
-        }
-        15
-        |this
-        |that
-        ^
-        >Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-        >eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
-        >minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-        >aliquip ex ea commodo consequat. Duis aute irure dolor in
-        >reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-        >pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-        >culpa qui officia deserunt mollit anim id est
-        >laborum.
-        ^
-    ]
-    \"i am mordac\" true
-    \"you are so wrong\" null
-}")
-
-(define-test generate-output)
-
-(define-test "generate: thorough example"
-  :parent generate-output
-    (is equal (with-output-to-string (strm)
-      (plines:generate-to strm *sparrow-object* :pretty-indent 4))
-        *pretty-sparrow*))
-
-(defpackage #:com.djhaskin.plines/test-intern-package)
-
-(defparameter *test-intern-package*
-  (find-package '#:com.djhaskin.plines/test-intern-package))
-
-(defparameter *sparrow-alist-different-package*
-  `((COM.DJHASKIN.NRDL/TEST-INTERN-PACKAGE::|FORCE PUSH|
-                                                   . "I sing because I'm happy")
-    ("I am web mistress ming")
-    (COM.DJHASKIN.NRDL/TEST-INTERN-PACKAGE::OTHER . ,(format nil "~@{~A~^~%~}"
-                                                            "And I know"
-                                                            "He's watching"
-                                                            "Over me"))
-    (COM.DJHASKIN.NRDL/TEST-INTERN-PACKAGE::POEM . ,(format nil "~@{~A~^~%~}"
-                                                           "His eyee"
-                                                           "is on"
-                                                           "The sparrow"))
-    (COM.DJHASKIN.NRDL/TEST-INTERN-PACKAGE::THE-SPARROWS
-      . COM.DJHASKIN.NRDL/TEST-INTERN-PACKAGE::HIS-EYE)
-    (COM.DJHASKIN.NRDL/TEST-INTERN-PACKAGE::THE-TREES)
-    (COM.DJHASKIN.NRDL/TEST-INTERN-PACKAGE::THE-WIND . "bullseye")
-    (COM.DJHASKIN.NRDL/TEST-INTERN-PACKAGE::THIS-SHOULD-STILL-WORK . 15.0)
-    (COM.DJHASKIN.NRDL/TEST-INTERN-PACKAGE::WENDOVER
-      ((COM.DJHASKIN.NRDL/TEST-INTERN-PACKAGE::ALSO . -1000)
-       (COM.DJHASKIN.NRDL/TEST-INTERN-PACKAGE::AND . 1.01)
-       (COM.DJHASKIN.NRDL/TEST-INTERN-PACKAGE::APPARENTLY . 10000)
-       (COM.DJHASKIN.NRDL/TEST-INTERN-PACKAGE::BUT . 1000)
-       (COM.DJHASKIN.NRDL/TEST-INTERN-PACKAGE::GAMBLING . 100)
-       (COM.DJHASKIN.NRDL/TEST-INTERN-PACKAGE::MUCH . -10)
-       (COM.DJHASKIN.NRDL/TEST-INTERN-PACKAGE::PARAMEDICS . -10000)
-       (COM.DJHASKIN.NRDL/TEST-INTERN-PACKAGE::SO . 1))
-      ((COM.DJHASKIN.NRDL/TEST-INTERN-PACKAGE::A
-         . COM.DJHASKIN.NRDL/TEST-INTERN-PACKAGE::FIRE)
-       (COM.DJHASKIN.NRDL/TEST-INTERN-PACKAGE::DIE
-         . COM.DJHASKIN.NRDL/TEST-INTERN-PACKAGE::IN))
-      15 ,(format nil "~@{~A~^~%~}" "this" "that")
-      ,(format
-         nil "~@{~A~^ ~}"
-         "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do"
-         "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim"
-         "ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut"
-         "aliquip ex ea commodo consequat. Duis aute irure dolor in"
-         "reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla"
-         "pariatur. Excepteur sint occaecat cupidatat non proident, sunt in"
-         "culpa qui officia deserunt mollit anim id est laborum."))
-    ("i am mordac" . T) ("you are so wrong" . CL:NULL)))
-
-(define-test alternate-package)
-
-(define-test "Alternate package: parse"
-  :parent alternate-package
-  (is equal
-      (plines:nested-to-alist
-        (with-input-from-string
-            (strm *sparrow*)
-          (let ((plines:*symbol-package* *test-intern-package*))
-            (plines:parse-from strm))))
-      *sparrow-alist-different-package*))
+(defun by-int (candidate resident index size)
+  (declare (ignore index size))
+  (- candidate resident))
 
 
-(with-input-from-string
-    (strm *pretty-sparrow*)
-  (plines:to-fset
-    (plines:parse-from strm)))
+(wbtrees:ins
+  1
+  (wbtrees:ins
+    4
+    (wbtrees:ins
+      2
+      (wbtrees:ins
+        5
+        (wbtrees:ins
+          3
+          (wbtrees:ins
+            6
+            (wbtrees:ins
+              8
+              (wbtrees:ins
+                -1
+                nil)
+              :cmp #'by-int)
+            :cmp #'by-int)
+          :cmp #'by-int)
+        :cmp #'by-int)
+      :cmp #'by-int)
+    :cmp #'by-int)
+  :cmp #'by-int)
+
+      :cmp #'by-int
+      (
+
+
+
+
+(test *)

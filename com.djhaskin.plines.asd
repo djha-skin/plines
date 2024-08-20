@@ -30,5 +30,3 @@
                          (uiop:symbol-call
                            :parachute
                            :test :com.djhaskin.nrdl/tests)))
-
-Pennant Lines

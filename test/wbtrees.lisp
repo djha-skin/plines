@@ -470,7 +470,74 @@
                                 :LEFT NIL
                                 :RIGHT NIL)
                       :RIGHT NIL)
-            :RIGHT #S(WBTREES::NODE :VALUE 8 :SIZE 1 :LEFT NIL :RIGHT NIL)))))
+            :RIGHT #S(WBTREES::NODE :VALUE 8 :SIZE 1 :LEFT NIL :RIGHT NIL))))
+
+  (is (wbtrees:ins 5 ins-by-int :cmp #'by-int)
+      #S(WBTREES::NODE
+          :VALUE 3
+          :SIZE 9
+          :LEFT #S(WBTREES::NODE
+                    :VALUE -1
+                    :SIZE 3
+                    :LEFT NIL
+                    :RIGHT #S(WBTREES::NODE
+                               :VALUE 2
+                               :SIZE 2
+                               :LEFT #S(WBTREES::NODE
+                                         :VALUE 1
+                                         :SIZE 1
+                                         :LEFT NIL
+                                         :RIGHT NIL)
+                               :RIGHT NIL))
+          :RIGHT #S(WBTREES::NODE
+                     :VALUE 6
+                     :SIZE 5
+                     :LEFT #S(WBTREES::NODE
+                               :VALUE 5
+                               :SIZE 3
+                               :LEFT #S(WBTREES::NODE
+                                         :VALUE 4
+                                         :SIZE 1
+                                         :LEFT NIL
+                                         :RIGHT NIL)
+                               :RIGHT #S(WBTREES::NODE
+                                          :VALUE 5
+                                          :SIZE 1
+                                          :LEFT NIL
+                                          :RIGHT NIL))
+                     :RIGHT #S(WBTREES::NODE :VALUE 8 :SIZE 1 :LEFT NIL :RIGHT NIL))))
+  (is
+    equalp
+    (wbtrees:ins 5 ins-by-int :cmp #'by-int :allow-duplicates nil)
+    #S(WBTREES::NODE
+        :VALUE 3
+        :SIZE 8
+        :LEFT #S(WBTREES::NODE
+                  :VALUE -1
+                  :SIZE 3
+                  :LEFT NIL
+                  :RIGHT #S(WBTREES::NODE
+                             :VALUE 2
+                             :SIZE 2
+                             :LEFT #S(WBTREES::NODE
+                                       :VALUE 1
+                                       :SIZE 1
+                                       :LEFT NIL
+                                       :RIGHT NIL)
+                             :RIGHT NIL))
+        :RIGHT #S(WBTREES::NODE
+                   :VALUE 6
+                   :SIZE 4
+                   :LEFT #S(WBTREES::NODE
+                             :VALUE 5
+                             :SIZE 2
+                             :LEFT #S(WBTREES::NODE
+                                       :VALUE 4
+                                       :SIZE 1
+                                       :LEFT NIL
+                                       :RIGHT NIL)
+                             :RIGHT NIL)
+                   :RIGHT #S(WBTREES::NODE :VALUE 8 :SIZE 1 :LEFT NIL :RIGHT NIL)))))
 
 (define-test retrieve-functions)
 
@@ -488,7 +555,6 @@
                         :index -3 :sentinel :lolnope)
       :lolnope))
 
-
 (define-test removal-functions)
 
 (define-test "weight-balanced trees: removal-functions: basic tests"
@@ -499,32 +565,74 @@
     (eql :lolnope))
   (is-values
     (wbtrees:rm one-element :index -8 :sentinel :lolnope)
-    (eq one-element)
+    ;; TODO: make `eq` work
+    (equalp one-element)
     (eql :lolnope))
   (is-values
     (wbtrees:rm eight-element :index 4)
     (equalp #S(WBTREES::NODE
-        :VALUE 2
-        :SIZE 7
-        :LEFT #S(WBTREES::NODE
-                  :VALUE 6
-                  :SIZE 4
-                  :LEFT #S(WBTREES::NODE
-                            :VALUE 7
-                            :SIZE 2
-                            :LEFT #S(WBTREES::NODE
-                                      :VALUE 8
-                                      :SIZE 1
-                                      :LEFT NIL
-                                      :RIGHT NIL)
-                            :RIGHT NIL)
-                  :RIGHT #S(WBTREES::NODE :VALUE 4 :SIZE 1 :LEFT NIL :RIGHT NIL))
-        :RIGHT #S(WBTREES::NODE
-                   :VALUE 1
-                   :SIZE 2
-                   :LEFT NIL
-                   :RIGHT #S(WBTREES::NODE :VALUE 5 :SIZE 1 :LEFT NIL :RIGHT NIL))))
-    (eql 3)))
+                :VALUE 2
+                :SIZE 7
+                :LEFT #S(WBTREES::NODE
+                          :VALUE 6
+                          :SIZE 4
+                          :LEFT #S(WBTREES::NODE
+                                    :VALUE 7
+                                    :SIZE 2
+                                    :LEFT #S(WBTREES::NODE
+                                              :VALUE 8
+                                              :SIZE 1
+                                              :LEFT NIL
+                                              :RIGHT NIL)
+                                    :RIGHT NIL)
+                          :RIGHT #S(WBTREES::NODE :VALUE 4 :SIZE 1 :LEFT NIL :RIGHT NIL))
+                :RIGHT #S(WBTREES::NODE
+                           :VALUE 1
+                           :SIZE 2
+                           :LEFT NIL
+                           :RIGHT #S(WBTREES::NODE :VALUE 5 :SIZE 1 :LEFT NIL :RIGHT NIL))))
+    (eql 3))
+  (is-values
+    (wbtrees:rm-max (wbtrees:rm-max (wbtrees:rm-max eight-element)))
+    (equalp #S(WBTREES::NODE
+                :VALUE 6
+                :SIZE 5
+                :LEFT #S(WBTREES::NODE
+                          :VALUE 7
+                          :SIZE 2
+                          :LEFT #S(WBTREES::NODE :VALUE 8 :SIZE 1 :LEFT NIL :RIGHT NIL)
+                          :RIGHT NIL)
+                :RIGHT #S(WBTREES::NODE
+                           :VALUE 3
+                           :SIZE 2
+                           :LEFT #S(WBTREES::NODE :VALUE 4 :SIZE 1 :LEFT NIL :RIGHT NIL)
+                           :RIGHT NIL)))
+    (eql 2))
 
+  (is-values (wbtrees:rm-min eight-element)
+             (equalp
+               #S(WBTREES::NODE
+                   :VALUE 3
+                   :SIZE 7
+                   :LEFT #S(WBTREES::NODE
+                             :VALUE 6
+                             :SIZE 3
+                             :LEFT #S(WBTREES::NODE :VALUE 7 :SIZE 1 :LEFT NIL :RIGHT NIL)
+                             :RIGHT #S(WBTREES::NODE :VALUE 4 :SIZE 1 :LEFT NIL :RIGHT NIL))
+                   :RIGHT #S(WBTREES::NODE
+                              :VALUE 1
+                              :SIZE 3
+                              :LEFT #S(WBTREES::NODE :VALUE 2 :SIZE 1 :LEFT NIL :RIGHT NIL)
+                              :RIGHT #S(WBTREES::NODE :VALUE 5 :SIZE 1 :LEFT NIL :RIGHT NIL))))
+             (eql 8))
+  (is-values (wbtrees:rm-min one-element)
+             (eq nil)
+             (eql 5))
+  (is-values (wbtrees:rm-max one-element)
+             (eq nil)
+             (eql 5)))
 
 (test *)
+
+(define-test "weight-balanced trees: removal-functions: set tests"
+     

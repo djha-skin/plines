@@ -207,44 +207,40 @@
       (index 0)
       (cmp #'by-index)
       (allow-duplicates t))
-  (if (null tree)
-      (glue
-        val
-        nil
-        nil)
-      (with-slots ((tval value)
-                   (tsize size)
-                   (tleft left)
-                   (tright right))
-          tree
-        (let* ((lsize (size tleft))
-               (result (funcall cmp val tval index lsize)))
-          (cond
-            ((< result 0)
-             (balance-right
-               tval
-               (ins val
-                    tleft
-                    :index index
-                    :cmp cmp
-                    :allow-duplicates allow-duplicates)
-               tright))
-            ((> result 0)
-             (balance-left
-               tval
-               tleft
-               (ins val
-                    tright
-                    :index (- index lsize 1)
-                    :cmp cmp
-                    :allow-duplicates allow-duplicates)))
-            (allow-duplicates
-             (balance-left
+  (labels
+      ((insrec (rectree recindex dups)
+         (if (null rectree)
+             (glue
                val
-               tleft
-               (ins-min tval
-                        tright)))
-            (:else tree))))))
+               nil
+               nil)
+             (with-slots ((tval value)
+                          (tsize size)
+                          (tleft left)
+                          (tright right))
+                 rectree
+               (let* ((lsize (size tleft))
+                      (result (funcall cmp val tval recindex lsize)))
+                 (cond
+                   ((< result 0)
+                    (balance-right
+                      tval
+                      (insrec tleft recindex dups)
+                      tright))
+                   ((> result 0)
+                    (balance-left
+                      tval
+                      tleft
+                      (insrec tright (- recindex lsize 1) dups)))
+                   (dups
+                    (balance-left
+                      val
+                      tleft
+                      (ins-min tval
+                               tright)))
+                      (:else 
+                       (return-from ins tree))))))))
+    (insrec tree index allow-duplicates)))
 
 (defun rm-min (tree)
   (with-slots

@@ -471,8 +471,8 @@
                                 :RIGHT NIL)
                       :RIGHT NIL)
             :RIGHT #S(WBTREES::NODE :VALUE 8 :SIZE 1 :LEFT NIL :RIGHT NIL))))
-
-  (is (wbtrees:ins 5 ins-by-int :cmp #'by-int)
+  (is equalp
+      (wbtrees:ins 5 ins-by-int :cmp #'by-int)
       #S(WBTREES::NODE
           :VALUE 3
           :SIZE 9
@@ -507,37 +507,9 @@
                                           :RIGHT NIL))
                      :RIGHT #S(WBTREES::NODE :VALUE 8 :SIZE 1 :LEFT NIL :RIGHT NIL))))
   (is
-    equalp
+    eq
     (wbtrees:ins 5 ins-by-int :cmp #'by-int :allow-duplicates nil)
-    #S(WBTREES::NODE
-        :VALUE 3
-        :SIZE 8
-        :LEFT #S(WBTREES::NODE
-                  :VALUE -1
-                  :SIZE 3
-                  :LEFT NIL
-                  :RIGHT #S(WBTREES::NODE
-                             :VALUE 2
-                             :SIZE 2
-                             :LEFT #S(WBTREES::NODE
-                                       :VALUE 1
-                                       :SIZE 1
-                                       :LEFT NIL
-                                       :RIGHT NIL)
-                             :RIGHT NIL))
-        :RIGHT #S(WBTREES::NODE
-                   :VALUE 6
-                   :SIZE 4
-                   :LEFT #S(WBTREES::NODE
-                             :VALUE 5
-                             :SIZE 2
-                             :LEFT #S(WBTREES::NODE
-                                       :VALUE 4
-                                       :SIZE 1
-                                       :LEFT NIL
-                                       :RIGHT NIL)
-                             :RIGHT NIL)
-                   :RIGHT #S(WBTREES::NODE :VALUE 8 :SIZE 1 :LEFT NIL :RIGHT NIL)))))
+    ins-by-int))
 
 (define-test retrieve-functions)
 
@@ -631,8 +603,6 @@
   (is-values (wbtrees:rm-max one-element)
              (eq nil)
              (eql 5)))
-
-(test *)
 
 (define-test "weight-balanced trees: removal-functions: set tests"
      

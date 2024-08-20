@@ -224,10 +224,10 @@
              (balance-right
                tval
                (ins val
-                       tleft
-                       :index index
-                       :cmp cmp
-                       :allow-duplicates allow-duplicates)
+                    tleft
+                    :index index
+                    :cmp cmp
+                    :allow-duplicates allow-duplicates)
                tright))
             ((> result 0)
              (balance-left
@@ -244,7 +244,7 @@
                tleft
                (ins-min tval
                         tright)))
-             (:else tree))))))
+            (:else tree))))))
 
 (defun rm-min (tree)
   (with-slots
@@ -253,11 +253,11 @@
        (tright right))
       tree
     (if (null tleft)
-        (values tright value)
+        (values tright tval)
         (multiple-value-bind (newleft removed)
             (rm-min tleft)
           (values (balance-left
-                    tval newleft right) removed)))))
+                    tval newleft tright) removed)))))
 
 (defun rm-max (tree)
   (with-slots
@@ -266,11 +266,11 @@
        (tright right))
       tree
     (if (null tright)
-        (values tleft value)
+        (values tleft tval)
         (multiple-value-bind (newright removed)
             (rm-max tright)
           (values (balance-right
-                    tval left newright) removed)))))
+                    tval tleft newright) removed)))))
 
 (defun rm
     (tree
@@ -278,9 +278,10 @@
       (val nil)
       (index 0)
       (cmp #'by-index)
-      (allow-duplicates t))
+      (allow-duplicates t)
+      (sentinel nil))
   (if (null tree)
-      (values nil nil)
+      (values nil sentinel)
       (with-slots ((tval value)
                    (tsize size)
                    (tleft left)
@@ -296,7 +297,8 @@
                      :val val
                      :index index
                      :cmp cmp
-                     :allow-duplicates allow-duplicates)
+                     :allow-duplicates allow-duplicates
+                     :sentinel sentinel)
                (values
                  (balance-left
                    tval
@@ -310,30 +312,29 @@
                      :val val
                      :index (- index lsize 1)
                      :cmp cmp
-                     :allow-duplicates allow-duplicates)
+                     :allow-duplicates allow-duplicates
+                     :sentinel sentinel)
                (values
                  (balance-right
                    tval
                    tleft
                    delright)
                  removed)))
+            ((and (null tright)
+                  (null tleft))
+             (values nil tval))
+            ((null tright)
+             (multiple-value-bind (newleft newroot)
+                 (rm-max tleft)
+               (values
+                 (glue newroot newleft tright)
+                 tval)))
             (:else
-             (cond ((and (null tright)
-                         (null tleft))
-                    (values nil tval))
-                   ((null tright)
-                    (multiple-value-bind (newleft newroot)
-                        (rm-max tleft)
-                      (values
-                        (glue newroot newleft tright)
-                        tval)
-                      ))
-                   (:else
-                    (multiple-value-bind (newright newroot)
-                        (rm-min tright)
-                      (values
-                      (glue newroot tleft newright)
-                      tval))))))))))
+             (multiple-value-bind (newright newroot)
+                 (rm-min tright)
+               (values
+                 (glue newroot tleft newright)
+                 tval))))))))
 
 (defun retrieve
     (tree
@@ -368,8 +369,6 @@
                :sentinel sentinel))
             (:else
              tval))))))
-
-;;; TODO: SETF RETRIEVE
 
 (defun foldl
     (tree

@@ -66,7 +66,7 @@
                             :size 17
                             :left nil
                             :right 23))))
-
+))
 (defparameter a (wbtrees:glue 15 nil nil))
 (defparameter b (wbtrees:glue 7 nil nil))
 (defparameter c (wbtrees:glue 87 nil nil))
@@ -405,6 +405,73 @@
                                          :LEFT NIL
                                          :RIGHT NIL))))))
 
+(defun by-int (candidate resident index size)
+  (declare (ignore index size))
+  (- candidate resident))
+
+(defparameter ins-by-int
+  (wbtrees:ins
+    1
+    (wbtrees:ins
+      4
+      (wbtrees:ins
+        2
+        (wbtrees:ins
+          5
+          (wbtrees:ins
+            3
+            (wbtrees:ins
+              6
+              (wbtrees:ins
+                8
+                (wbtrees:ins
+                  -1
+                  nil)
+                :cmp #'by-int)
+              :cmp #'by-int)
+            :cmp #'by-int)
+          :cmp #'by-int)
+        :cmp #'by-int)
+      :cmp #'by-int)
+    :cmp #'by-int))
+
+(define-test
+  "weight-balanced trees: insert-functions: sorted mode"
+  (is
+    equalp
+    ins-by-int
+    #S(WBTREES::NODE
+        :VALUE 3
+        :SIZE 8
+        :LEFT
+        #S(WBTREES::NODE
+            :VALUE -1
+            :SIZE 3
+            :LEFT NIL
+            :RIGHT #S(WBTREES::NODE
+                       :VALUE 2
+                       :SIZE 2
+                       :LEFT #S(WBTREES::NODE
+                                 :VALUE 1
+                                 :SIZE 1
+                                 :LEFT NIL
+                                 :RIGHT NIL)
+                       :RIGHT NIL))
+        :RIGHT
+        #S(WBTREES::NODE
+            :VALUE 6
+            :SIZE 4
+            :LEFT #S(WBTREES::NODE
+                      :VALUE 5
+                      :SIZE 2
+                      :LEFT #S(WBTREES::NODE
+                                :VALUE 4
+                                :SIZE 1
+                                :LEFT NIL
+                                :RIGHT NIL)
+                      :RIGHT NIL)
+            :RIGHT #S(WBTREES::NODE :VALUE 8 :SIZE 1 :LEFT NIL :RIGHT NIL)))))
+
 (define-test retrieve-functions)
 
 (define-test "weight-balanced trees: retrieve functions"
@@ -421,40 +488,43 @@
                         :index -3 :sentinel :lolnope)
       :lolnope))
 
-(defun by-int (candidate resident index size)
-  (declare (ignore index size))
-  (- candidate resident))
 
+(define-test removal-functions)
 
-(wbtrees:ins
-  1
-  (wbtrees:ins
-    4
-    (wbtrees:ins
-      2
-      (wbtrees:ins
-        5
-        (wbtrees:ins
-          3
-          (wbtrees:ins
-            6
-            (wbtrees:ins
-              8
-              (wbtrees:ins
-                -1
-                nil)
-              :cmp #'by-int)
-            :cmp #'by-int)
-          :cmp #'by-int)
-        :cmp #'by-int)
-      :cmp #'by-int)
-    :cmp #'by-int)
-  :cmp #'by-int)
-
-      :cmp #'by-int
-      (
-
-
+(define-test "weight-balanced trees: removal-functions: basic tests"
+  :parent removal-functions
+  (is-values
+    (wbtrees:rm nil :sentinel :lolnope)
+    (eq nil)
+    (eql :lolnope))
+  (is-values
+    (wbtrees:rm one-element :index -8 :sentinel :lolnope)
+    (eq one-element)
+    (eql :lolnope))
+  (is-values
+    (wbtrees:rm eight-element :index 4)
+    (equalp #S(WBTREES::NODE
+        :VALUE 2
+        :SIZE 7
+        :LEFT #S(WBTREES::NODE
+                  :VALUE 6
+                  :SIZE 4
+                  :LEFT #S(WBTREES::NODE
+                            :VALUE 7
+                            :SIZE 2
+                            :LEFT #S(WBTREES::NODE
+                                      :VALUE 8
+                                      :SIZE 1
+                                      :LEFT NIL
+                                      :RIGHT NIL)
+                            :RIGHT NIL)
+                  :RIGHT #S(WBTREES::NODE :VALUE 4 :SIZE 1 :LEFT NIL :RIGHT NIL))
+        :RIGHT #S(WBTREES::NODE
+                   :VALUE 1
+                   :SIZE 2
+                   :LEFT NIL
+                   :RIGHT #S(WBTREES::NODE :VALUE 5 :SIZE 1 :LEFT NIL :RIGHT NIL))))
+    (eql 3)))
 
 
 (test *)

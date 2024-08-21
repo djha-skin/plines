@@ -38,6 +38,8 @@
 
 (in-package #:com.djhaskin.plines/wbtrees)
 
+(defparameter undefined 'undefined)
+
 (defstruct node
   value
   size
@@ -467,3 +469,186 @@
             tval
             (foldr tright init reducer))
           reducer))))
+
+(defun join-with
+    (a b pivot)
+  (declare (type tree a)
+           (type tree b))
+  (let ((a-not-too-big (balanced-against b a))
+        (b-not-too-big (balanced-against a b)))
+    (cond ((and
+             a-not-too-big
+             b-not-too-big)
+           (glue pivot a b))
+          (a-not-too-big
+           (with-slots ((bval value)
+                        (bleft left)
+                        (bright right))
+             (balance-right
+               bval
+                 (join-with
+                   a
+                   bleft
+                   pivot)
+                 bright)))
+          (b-not-too-big
+           (with-slots ((aval value)
+                        (aleft left)
+                        (aright right))
+               (balance-left
+                 aval
+                 aleft
+                 (join-with
+                   aright
+                   b
+                   pivot))))
+          (:else
+           (error "Unhandled condition")))))
+
+(defun join (a b)
+  (declare (type tree a)
+           (type tree b))
+  (cond ((and (zerop (size a))
+              (zerop (size b)))
+         nil)
+        ((zerop (size a)) b)
+        ((zerop (size b)) a)
+        ((> (size a) (size b))
+         (multiple-value-bind (newa newpivot)
+             (rm-max a)
+           (join-with newa newpivot b)))
+        (:else
+         (multiple-value-bind (newb newpivot)
+             (rm-min b)
+           (join-with a newpivot newb)))))
+
+(defun split-at
+    (tree
+      &key
+      index
+      val
+      (cmp #'by-int)
+      sentinel)
+  (declare (type tree a)
+           (type tree b))
+  (let ((effective-index (if (null index)
+                             (truncate (size tree) 2)
+                             index)))
+    (labels ((splitrec (rectree recindex)
+               (if (null rectree)
+                   (values
+                     sentinel
+                     nil
+                     nil)
+                   (with-slots ((tval value)
+                                (tleft left)
+                                (tright right))
+                       rectree
+        (let* ((lsize (size tleft))
+               (result (funcall cmp val tval recindex lsize)))
+          (cond ((< result 0)
+                 (multiple-value-bind (sat sleft sright)
+                     (splitrec tleft recindex)
+                   (values
+                     sat
+                     sleft
+                   (join-with
+                     tval
+                     sright
+                     tright))))
+                ((> result 0)
+                 (multiple-value-bind (sat sleft sright)
+                     (splitrec tright (- recindex lsize 1))
+                   (values
+                     sat
+                   (join-with
+                     tval
+                     tleft
+                     sleft)
+                   sright)))
+                (:else
+                 (values
+                   tval
+                   tleft
+                   tright))))))))
+      (splitrec tree index))))
+
+
+;;; https://en.wikipedia.org/wiki/Weight-balanced_tree
+(defun set-union (a b cmp)
+  (declare (type tree a)
+           (type tree b))
+  (cond ((null a) b)
+        ((null b) a)
+        (:else
+         (with-slots ((bval value)
+                      (bleft left)
+                      (bright right))
+             b
+           (multiple-value-bind (pivot sleft sright)
+               (split-at a
+                         :value bval
+                         :cmp cmp)
+             (declare (ignore pivot))
+             (join-with
+               (set-union
+                 sleft
+                 bleft
+                 cmp)
+               (set-union
+                 sright
+                 bright
+                 cmp)
+                 (join-with newleft newright bval)))))))
+
+(defun set-intersection (a b cmp)
+  (declare (type tree a)
+           (type tree b))
+  (cond ((null a) a)
+        ((null b) b)
+        (:else
+         (with-slots ((bval value)
+                      (bleft left)
+                      (bright right))
+             b
+           (multiple-value-bind (pivot sleft sright)
+               (split-at a
+                         :value bval
+                         :cmp cmp
+                         :sentinel undefined)
+             (let ((newleft (set-intersection
+                 sleft
+                 bleft
+                 cmp))
+                   (newright (set-intersection
+                 sright
+                 bright
+                 cmp)))
+             (if (eq pivot undefined)
+                 (join newleft newright)
+                 (join-with newleft newright bval))))))))
+
+(defun set-subtract (a b cmp)
+  (declare (type tree a)
+           (type tree b))
+  (cond ((null a) a)
+        ((null b) a)
+        (:else
+         (with-slots ((bval value)
+                      (bleft left)
+                      (bright right))
+             b
+           (multiple-value-bind (pivot sleft sright)
+               (split-at a
+                         :value bval
+                         :cmp cmp)
+             (declare (ignore pivot))
+             (let ((newleft (set-subtract
+                 sleft
+                 bleft
+                 cmp))
+                   (newright (set-subtract
+                 sright
+                 bright
+                 cmp)))
+                 (join newleft newright)))))))

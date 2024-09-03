@@ -1,6 +1,7 @@
 \documentclass[sigconf]{acmart}
 \usepackage{listings}
 \usepackage{hyperref}
+\usepackage[pdf]{graphviz}
 \begin{document}
 
 \title{Pennant Lines: An Alternative to Finger Trees in Dynamic Environments}
@@ -206,7 +207,6 @@ Patterson\cite{Hinze-Paterson:FingerTree} did with Finger Trees. That means
 there will be added polymorphism and hence complexity, but it will not be too
 much.
 
-
 \subsection{Sorted Mode: Speeding Up Set Operations}
 
 Binary trees are a good basis for our use case for another reason: there's
@@ -266,6 +266,576 @@ exponent increment, and is equally easy to do.)
 
 (Draft note, primer for WB trees goes here in the actual paper)
 
+\subsection{Concatenation and Splitting}
+
+We have at least a logarithmic baseline for insertion, deletion, and access
+within our sequence.
+
+Next we have concatenation and splitting to consider.
+
+%%Guy Blelloch et. al. gave us fantastic recipes for merging and splitting
+%%trees _where a middle key is already present_, but if we have two trees together,
+%%and we wished to merge them (thus concatenating the list), we would have to
+%%delete the maximum element from one tree or the minimum from the other,kkkk
+%%resulting in logarithmic time concatenation or splitting, even if two
+%%trees are of equal size.
+%%
+%%Seeking to ensure that, if two trees are of equal size, merging and splitting
+%%takes $O(1)$ time, we observe that if we already \emph{had} a pivot element, it
+%%would be $O(1)$ time. So, we should make sure we always have a pivot element
+%%handy.k
+%%
+To this end, we next consider a tree where:
+
+1. The root has no left child
+2. The right child is an arbitrarily large balanced binary tree
+
+We first start with a complete tree:
+
+\digraph{CompleteTree}{
+    size="2.5,3";
+    node[shape=box];
+    subgraph pivot {
+        0;
+    }
+    subgraph left {
+        a;
+        b;
+        c;
+        d;
+        e;
+        f;
+        g;
+        a -> b;
+        a -> c;
+        b -> d;
+        b -> e;
+        c -> f;
+        c -> g;
+    }
+    subgraph right {
+        2 -> 1;
+        2 -> 3;
+        4 -> 2;
+        4 -> 6;
+        6 -> 5; 
+        6 -> 7;
+    }
+    0 -> a;
+    0 -> 4;
+}
+
+Then we break the left side off:
+
+\digraph{BrokenTree}{
+    size="2.5,3";
+    node[shape=box];
+    subgraph pivot {
+        0;
+    }
+    subgraph left {
+        a[style=invis];
+        b[style=invis];
+        c[style=invis];
+        d[style=invis];
+        e[style=invis];
+        f[style=invis];
+        g[style=invis];
+        a -> b[style=invis];
+        a -> c[style=invis];
+        b -> d[style=invis];
+        b -> e[style=invis];
+        c -> f[style=invis];
+        c -> g[style=invis];
+    }
+    subgraph right {
+        4 -> 2;
+        4 -> 6;
+        2 -> 1;
+        2 -> 3;
+        6 -> 5; 
+        6 -> 7;
+    }
+    0 -> a[style=invis];
+    0 -> 4;
+}
+
+We end up with a pennant tree whose first node is the "minimum" knode, the one
+that comes first in the sequence. It could be rendered thus:
+
+\begin{figure}
+    \caption{A complete pennant tree.}
+    \label{complete-pennant}
+    \digraph{PennantTree}{
+        size="2.5,3";
+        node[shape=box];
+        subgraph pivot {
+            0;
+        }
+        subgraph right {
+            4 -> 2;
+            4 -> 6;
+            2 -> 1;
+            2 -> 3;
+            6 -> 5; 
+            6 -> 7;
+        }
+        0 -> 4;
+    }
+\end{figure}
+
+In the above illustration, we have a sequence of 8 spots, with each spot labeled
+with its relative index in a list.
+
+To make a pennant tree $P$, we simply keep a pair of things. The first member of the
+pair is $m$ the minimum node, and the second member $t$ is the "rest" of the
+tree, the part of the pennant that is a normal binary search tree:
+
+\begin{equation}
+    P = <m,t>
+\end{equation}
+
+By always carrying around an explicit minimum element $m$, concatenation and
+splitting of two trees of equal size stays in constant time.
+
+Given two trees $Q = <m_q,t_q>$ and $R = <m_r,t_r>$, we construct a new tree $S
+= <m_q,j(t_q, m_r, t_r)>$, where $j(l,p,r)$ creates a new tree by joining
+balanced trees $l$ and $r$ using pivot $p$.
+
+Similarly, given a tree $S = <m_s,t_s>$, we simply reverse the operation. We
+take the pivot element $p$ of $t_s$, and its left and right branches $l$ and
+$r$, and construct two new trees $Q = <m_s, l>$ and $R = <p, r>$ out of their
+parts.
+
+Merging and splitting two trees of unequal size is easy as well, and is described in
+\cite{10.1145/3512769}.
+
+For merging, assume we have two trees representing sequences, $a$ and
+$b$, with the elements of $a$ coming before those of $b$.
+
+Assume that $a$ is the larger tree. Then we traverse down the \emph{right spine}
+of $a$, always choosing the right child as we traverse, until we find a tree
+that is "roughly" of equal size. We decide this by checking if the subtree of
+$a$ is balanced with $b$. Once we find that the two are balanced, we merge them,
+rebalancing as we go back up the tree the way we came. The opposite case---that
+of $b$ being larger---is symmetrical.
+
+For splitting, we traverse down the right spine of a tree $t_p$ from a pennant
+$P = <m_p, t_p>$ that we wish to split traversing down the path of insertion at
+the index at which we wish to split, "ungluing" trees as we go. When we reach
+the bottom, we merge trees on the right side of the path with the trees, and
+left with left. We are left with two trees at the end $l$ and $r$, and a pivot
+element $p$. Then we create two new trees $Q = <m_p, l>$ and $R = <p, r>$.
+
+So now we have splitting and merging in $O(log n)$ time, and---crucially---
+splitting and merging trees of balanced size in $O(1)$ time. This will become
+important, as we will see.
+
+%% TODO CITE THE PENNANT THING HERE
+%%These hearken back to Okasaki's "Pennant Trees", if you draw the "first element"
+%%above the tree instead of to its left, and kind of look like a castle
+%%with a flag on it, so I'll call them pennant trees, too.
+
+\begin{table}
+    \caption{Running Times for Pennant Tree Sequences}
+    \label{tab:pennant-run-times}
+    \begin{tabular}{l|r}
+            \toprule
+
+            Operation     & Achieved time          \\
+            \midrule
+            Random insert/delete  & \texttt{O(log n)}             \\
+            Insert/delete at the ends & \texttt{O(log n)}            \\
+            Access head of list & \texttt{O(1)} \\
+            Traversal       & \texttt{O(n)}                \\
+            Concatenation   & \texttt{O(log n)}            \\
+            Splitting       & \texttt{O(log n)}            \\
+            Set operations  & \texttt{O(n)}\footnotemark[1]/
+            \texttt{o(log n)}\footnotemark[2] \\
+            Reversal        & \texttt{O(n)}                \\
+            \bottomrule
+        \end{tabular}
+    \end{table}
+\footnotetext[1]{Applies when the list is
+        unordered.}
+\footnotetext[2]{Applies when the list is ordered by a sort function.}
+
+\subsection{Creating Fingers}
+
+Pennant Trees by themselves achieve some impressive run times, given in table
+\ref{tab:pennant-run-times}. However, with just a little extra complexity, we can
+do better.
+
+We seek to improve the running time of inserting into and deleting from the tree
+at the ends, an important operation for a list.
+
+We will now create fingers as used in CITE THE FINGER THING HERE in our tree, in
+a move reminiscent of using Zippers CITE, much like Hinze and Paterson did with
+their 2-3 tree.
+
+Now we have a homogeneous data structure that has good running times for all our
+requirements (IDA stands for "insertion, deletion, and access"), though we still
+do not have efficient reversal.
+
+Let us now split the pennant tree in two and reverse the direction of the tree
+representing the upper half of the sequence, like this:
+
+\digraph{CompletePennantTree}{
+    size="2.5,3";
+    node[shape=box];
+    0 -> 8;
+    subgraph left {
+        4 -> 2;
+        4 -> 6;
+        2 -> 1;
+        2 -> 3;
+        6 -> 5;
+        6 -> 7;
+    }
+    subgraph right {
+        10 -> 9;
+        10 -> 11;
+        12 -> 10;
+        12 -> 14;
+        14 -> 13;
+        14 -> 15;
+    }
+    8 -> 4;
+    8 -> 12;
+}
+
+\digraph{SplitTree}{
+    size="2.5,3";
+    node[shape=box];
+    0;
+    subgraph left {
+        4 -> 2;
+        4 -> 6;
+        2 -> 1;
+        2 -> 3;
+        6 -> 5;
+        6 -> 7;
+    }
+    0 -> 4;
+    15;
+    subgraph right {
+        13 -> 14;
+        13 -> 12;
+        11 -> 13;
+        11 -> 9;
+        9 -> 10;
+        9 -> 8;
+    }
+    15 -> 11;
+}
+
+
+\begin{figure}
+    \label{fig:pennant-lines}
+    \caption{A pair of pennant lines.}
+    \includegraphics[scale=0.5]{img/pennant-lines}
+\end{figure}
+
+We then reverse the pointers along the left spines of these trees, placing the
+pennant (minimum) node apart in its own cell.
+What we end up with is pictured in figure \ref{fig:pennant-lines}. It's a
+4-tuple of:
+
+\begin{enumerate}
+    \item The first element in the sequence.
+    \item A list of weight-balanced pennant trees, containing the first part of
+        the sequence in order from left to right. Call this the "front list".
+    \item The last element in the sequence.
+    \item A list of weight-balanced pennant trees, containing the last part of
+        the sequence in order from right to left. Call this the "back list".
+\end{enumerate}
+
+The 4-tuple is really just a pair of pairs. The first pair is the minimum
+element in a sequence plus a list of trees "zipped" in relation to the second
+element, and the second pair is the same thing, but reversed and starting from
+the back of the parent sequence. In this paper, we will call these pairs which
+contain the "first" element and also a list of pennant trees a \emph{pennant
+line}. Then, reversing the arrows on the parent tree created a pair of pennant
+lines, one for the front of the list counting forwards, another for the back of
+the list counting backwards.
+
+It bears remembering that the tree from which we constructed this 4-tuple is
+equivalent, in some sense, to the 4-tuple itself. We may create rules around
+this new structure, saying that if the parent pennant tree corresponding to some
+4-tuple is balanced, then the structure is balanced. We will create balancing
+rules to keep this structure in good shape based on the balancing rules of its
+parent weight-balanced tree.
+
+Let's look at how we might keep these pennant lines "in balance" in the sense
+that, if we "unzipped" them back into the parent tree, the parent tree would be
+balanced as well.
+
+Pick a tree at index $n$ within a pennant line. The pennant (minimum) element
+corresponds to a node in the parent tree, with the list of all trees that came
+before $n$ as the "left child" tree and the pennant tree itself under the pennant
+element as the "right child" tree.
+
+Balancing checks the sum of all previous trees' sizes, plus one, against the
+size of the pennant node at the index $n$. It multiplies either quantity by
+$\Delta$ and checks to make sure that the other quantity is greater than or
+equal to this value.
+
+In doing so, we guarantee some very interesting properties for our sequence:
+
+A single left rotation in the parent tree corresponds to this action:
+A double left rotation in the parent tree corresponds to this action:
+
+A single right rotation in the parent tree corresponds to this action:
+A double right rotation in the parent tree corresponds to this action:
+
+Let us consider these rules when constantly adding to the front of a sequence.
+
+When we insert something into the front of the list, we put it in the "minimum
+element" slot. Then we take the previous minimum element and insert it into the
+first tree in the list. We check this first list's size by taking the size of
+all previous trees, adding them together, adding one to that, multiplying that
+by $\Delta$, and comparing that to the current list's size. There are no
+previous lists, so we compute $(0+1)*\Delta = \Delta$, and so the first tree may
+not get bigger than $\Delta = 3$ in our case.
+
+As we continue to insert into the front of the sequence, the first tree will
+exceed the size of $\Delta$ and we perform our first "left rotation". we perform a left
+rotation
+
+...
+
+Looking at the larger sequence, and thus looking at both pennant lines, front
+and back, we need to keep these pennant lines balanced by ensuring that one's
+size does not get larger than $\Delta$ multiplied by the "weight" of the other
+pennant line. If it is, we run a rotation according to normal weight-balanced
+rules. In the pennant lines world, that looks like this:
+
+
+We did thus and such to balance the lines. (I need to implement this.)
+
+Cases are symmetrical for inserting into the back.
+
+Deleting from the front is good too.
+
+Because the spine length of the original tree is logarithmic, and thus the list
+lengths of the pennant lines are logarithmic, we still get random searching,
+insertion and deletion in logarithmic time.
+
+Since we access the sequence from its ends, access to the head of the list is
+in constant time. Together with this fact and the fact that the number of
+rebalancing operations is in amortized constant time for arbitrary sequences of
+operations CITE, we have achieved amortized constant insertion and deletion from
+the beginning and ends of the list.
+
+After all this, we yet get another benefit for free: reversing the list takes
+constant time! Just swap the left pennant line with the right, and you are done!
+
+This is because one is in reverse order of the other.
+
+Banker's Deque, only with trees, down to the constant factor!
+
+Numeric representation, sort of.
+
+
+\begin{itemize}
+
+
+
+
+
+
+
+%%
+%%Blelloch's algos
+%%
+%%We have nice IDA and Concat/split, but can we do better? The ends aren't faster
+%%for IDA than the middle. This is probably bad.
+%%
+%%Well, a Finger Tree is just a zipper (due to Ge'rard Huet, 1997) over 2-3 trees.
+%%What if we did a front-back zipper over a weight-balanced pennant tree. (I know this
+%%introduces some measure of polymorphism, but hopefully we can control how much.
+%%Also, there's no 2-3 trees involved. That's the real problem there anyway.)
+%%
+%%(show what that looks like)
+%%
+%%Interesting, but awkward. Let's split that into two trees and make the right
+%%side a max-element pennant tree instead of a min-element one.
+%%
+%%(show what that looks like)
+%%
+%%Now we just have what looks like two lists Okasaki's pennant trees, only every
+%%node has an element, which is more space/time efficient and keeps things more
+%%uniform.
+%%
+%%Working out Hirai and Yakamoto's formula for balancing, inserting to the front
+%%of the list comes out with a beautiful inequality, assuming insertion only in
+%%the ends:
+%%
+%%```
+%%\sum_i=0^j size N_j <= 3 * size N_j+1
+%%```
+%%
+%%We get rid of the `+1`s because of what we'll call the "hanging node" in each
+%%pennant, the min or max indexed element. That node counts toward the size, and we're
+%%asking that node the size, so the +1's melt away. Neat!
+%%
+%%(Draft node, we need to treat random IDA here as well)
+%%
+%%So we lay out the zipper thus: The first element is the minimum node, then the
+%%next element is the min node of the actual tree, then the next is its parent
+%%plus the right tree, then the next is ...
+%%
+%%(Draw this)
+%%
+%%This zipped representation is very reminiscent of Okasaki's random access lists,
+%%specifically those using pennant trees with a skew binary number representation,
+%%only the balanced nature of the trees means I still have random insertion/deletion,
+%%not just access. Keeping the original tree balanced, only in this list form,
+%%corresponds to making sure there is a tree in each binary representation spot,
+%%though. The trees just get larger and smaller within those spots. It is easy to
+%%keep those spots filled by merging or splitting neighbors until the right shape
+%%emerges according to the `isBalanced` function from Hirai and Yakamoto. Bonus,
+%%the neighbors are usually of roughly equal size.
+%%
+%%
+%%Here's how normal balancing tree operations translates to this new double-list
+%%world:
+%%
+%%(show how the balancing operations work, with double-rotations and single)
+%%
+%%(show how a tree can be split up into the different slots)
+%%
+%%(show how any empty spots that emerge can be filled by "breaking off branches")
+%%
+%%(show balancing the two lists by moving the back trees around)
+%%
+%%Thus we can keep the original tree balanced, but in list form, providing cheap
+%%access to the ends, as desired.
+%%
+%%When merging two sequences, we have a left list of pennants and a right one in
+%%each sequence. We collapse the right list of the left tree ("unzip" it) into a
+%%tree, and put that tree of the end of the left list of the left tree. We do the
+%%symmetric operation to the right sequence. Then we put the right list of the
+%%right sequence and the left list of the left sequence together, and "rebalance"
+%%the lists. Thus, we have logarithmic merging.
+%%
+%%Splitting is very easy. Take a spot in one of the lists, cut there. Rebalance
+%%both new sequences.
+%%
+%%Now I have insertion, deletion, random access, traversal, splitting and
+%%merging. Also, we have _precisely_ created Okasaki's Banker's Deque, only with
+%%weight-balanced pennant trees instead of lists. Bonus! balancing the trees with
+%%`c=3` corresponds to _balancing the original weight-balanced tree_ using
+%%`\delta=3` as in Hirai and Yakomoto's paper!
+%%
+%%The new structure has everything we wanted. It's much
+%%simpler, being just two lists of pennant trees. The pennant trees are
+%%homogeneous throughout, meaning better memory efficiency and simpler code.
+%%There is just one new "type" of object in the new structure: tree nodes. There
+%%are only two total types -- trees and lists of trees. In effect, we've gotten
+%%rid of the 2-3 leaf trees from the finger tree and replaced them with WB trees,
+%%as well as that tree's spine. It has all the running times we were looking
+%%for. It supports sets and lists equally well, allowing us to treat sets and
+%%lists and lists as sets, a desirable attribute in a dynamic language like Lisp.
+%%
+%%We've dealt with IDA, merging, and splitting. In order to fully implement the
+%%cons and sequence APIs with this new structure, we need to address two more
+%%points: traversal and reversing the sequence.
+%%
+%%So we simply need to use a "normal" tree traversal algorithm (perhaps
+%%stack-based) for the trees.
+%%
+%%To go between trees in the lists, we observe that the two lists we have
+%%made with the "unzipped" version of the tree, we would see our right list is
+%%backwards and our left list is forwards. Thus, we can use `foldl` to go through
+%%the left list of the sequence and `foldr` to go through the right list.
+%%
+%%The only thing missing now is reversing the list, so as to implement `reverse`
+%%and `revappend`.
+%%
+%%Without trying for it, we have made reversal of the sequence absolutely trivial:
+%%just swap the right and left list. Reversing the list is a constant time
+%%operation!
+%%
+%%This is possible because the lists are oppositely-ordered, as above mentioned.
+%%
+%%We have now achieved the following bounds for operations:
+%%
+%%| Requirement     | Achieved time          |
+%%|-----------------|------------------------|
+%%| Random IDA      | `O(log n)`             |
+%%| IDA at the ends | `O(1)`                 |
+%%| Traversal       | `O(n)`                 |
+%%| Concatenation   | `O(log n)`             |
+%%| Splitting       | `O(log n)`             |
+%%| Reversal        | `O(1)`                 |
+%%| Length          | `O(1)`                 |
+%%| Set operations  | `O(n)`* / `o(log n)`** |
+%%
+%%\* = when the list is unordered
+%%** = when the sequence is ordered and both sets are non-overlapping using
+%%Blelloch's algos
+%%
+%%This new sequence structure would also allow us to fully implement the
+%%"sequences" API as well as functions from the alist world.
+%%
+%%As before discussed, we only need to define the sized pennant tree type.
+%%
+%%A pennant is a cons. The first cons has itself a cons, containing name and
+%%value. The second has itself a cons, containing left and right child.
+%%
+%%```
+%%(defstruct (pennant (:type list))
+%%  value
+%%  size
+%%  left
+%%  right)
+%%```
+%%
+%%Keeping everything conses will be more interesting in a moment, for
+%%`tree-equal`, `copy-tree`, and `destructuring-bind` purposes.
+%%
+%%Implementing the aforementioned cons and sequence API is efficient and persistent for all
+%%named operations.
+%%
+%%We could implement things with `:sorted-by sortfn` arguments to tell the
+%%function that it's sorted by some function. Things would be inserted, deleted,
+%%merged, split, and set ops would all be done assuming the sequence is sorted,
+%%gaining efficiency if this is the case.
+%%
+%%The sequence tree would then act like a giant "normal" Lisp list. You could treat it like an
+%%alist (and even choose to use `:sorted` operations, speeding up runtimes),
+%%a set (especially if using `:sorted`, again), a sequence, whatever.
+%%It would act in every way like the "old" lisp lists, only it would be
+%%asymptotically faster and more efficient while still providing persistence.
+%%
+%%If we only use this tree as a random _access_ list and only do
+%%inserts/deletes on its front, `tree-equal` still works with two trees that have the same
+%%things in them. This breaks down if random inserts/deletes happen, though. So
+%%that answers our question about `tree-equal`. It's still useful in some
+%%contexts, so we should support it. This is done through `:type list`. (We'll
+%%probably add a function like `tree-equalp` or `pltree-equal` to fix this.)
+%%
+%%Last thought: The structure is persistent, but doesn't need to be functional in
+%%the sense that we could allow mutation on it if needed, but then other
+%%operations would be persistent, just like in the original implementation of the
+%%API.
+%%
+%%Lastly, we need a name for this structure. It's two strings of pennants, like
+%%when someone goes through a finish line at a race. Let's just call them "pennant
+%%lines".
+%%
+%%## Proposal for Publishing
+%%
+%%It's good design work, and I think it
+%%deserves a paper. It's about as original as finger trees, at least, I think.
+%%
+%%Just a zipped weight-balanced tree, really, but connections to
+%%Okasaki's book are fascinating, particularly weight balancing and the banker's
+%%deque balancing going hand in hand, and how it makes list reversal trivial.
+%%
+%%With some advisory help, I could write this up as a paper, and my advisor would
+%%co-author.
 \section{Tables}
 
 

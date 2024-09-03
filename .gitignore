@@ -8,6 +8,7 @@
 /paper/*.blg
 /paper/*.dvi
 /paper/*.xcp
+/paper/*.dot
 
 
 # Build outputs
@@ -30,6 +31,7 @@
 .*#
 .*.sw[a-z]
 /.slime_paste
+
 
 # Lisp stuff
 /.repl/ros_history

@@ -426,6 +426,19 @@
             (:else
              tval))))))
 
+(defstruct path
+  (elders
+    father
+    youngers))
+
+;;;          d
+;;;       /     \
+;;;      /       \
+;;;     /         \
+;;;    b           f
+;;;  /   \       /   \
+;;; a     c     e     g
+
 (defun foldl
     (tree
       &optional
@@ -573,7 +586,6 @@
                    tright))))))))
       (splitrec tree index))))
 
-
 ;;; https://en.wikipedia.org/wiki/Weight-balanced_tree
 (defun set-union (a b cmp)
   (declare (type tree a)
@@ -652,3 +664,13 @@
                  bright
                  cmp)))
                  (join newleft newright)))))))
+
+(defun seq-union (a b pred)
+  (let ((ahash (make-hash-table
+                 :test
+                 pred)))
+    (foldr a ahash (lambda (c v)
+                     (setf (gethash v c)
+                           t)))
+    (foldr 
+

@@ -1,11 +1,11 @@
 ;;;; main.lisp -- Reference Implementation for Pennant Lines in Common Lisp
 ;;;;
+;;;;
 ;;;; SPDX-FileCopyrightText: 2024 Daniel Jay Haskin
 ;;;; SPDX-License-Identifier: MIT
 ;;;;
 
 #+(or)
-
 (progn
   (declaim (optimize (speed 0) (space 0) (debug 3)))
            (asdf:load-system "alexandria")
@@ -16,13 +16,15 @@
 (defpackage
   #:com.djhaskin.plines/wbtrees (:use #:cl)
   (:documentation
-    "
-    Pennant Lines' Weight-Balanced Trees
-    ")
+    "My Doof!")
   (:export
     size
     tree
     by-index
+    strcmp
+    symbolcmp
+    numcmp
+    conscmp
     ins-min
     ins-max
     ins
@@ -80,12 +82,57 @@
       (values tval tleft tright)))
 
 (declaim (inline by-index))
-(defun by-index (candidate resident index size)
-  (declare (type integer index)
-           (type integer size)
-           (ignore candidate)
-           (ignore resident))
-  (- index size))
+(defun by-index (candidate resident prevpos left-size)
+  (declare (ignore candidate)
+           (ignore resident)
+           (type (integer 0) prevpos)
+           (type (integer 0) left-size))
+  (- prevpos left-size 1))
+
+(declaim (inline strcmp))
+(defun strcmp (candidate resident prevpos left-size)
+  (declare (type string candidate)
+           (type string resident)
+           (type (integer 0) prevpos)
+           (type (integer 0) left-size)
+           (ignore prevpos)
+           (ignore left-size))
+  (loop for c across candidate
+        for r across resident
+        for diff = (- (char-code c) (char-code r))
+        while (zerop diff)
+        finally
+        (return diff)))
+
+(declaim (inline symbolcmp))
+(defun symbolcmp (candidate resident prevpos left-size)
+  (declare (type symbol candidate)
+           (type symbol resident)
+           (type (integer 0) prevpos)
+           (type (integer 0) left-size))
+  (strcmp
+    (symbol-name candidate)
+    (symbol-name resident)
+    prevpos
+    left-size))
+
+(declaim (inline numcmp))
+(defun numcmp (candidate resident prevpos left-size)
+  (declare (type number resident)
+           (type number candidate)
+           (type (integer 0) left-size)
+           (type (integer 0) prevpos)
+           (ignore left-size)
+           (ignore prevpos))
+  (- candidate resident))
+
+(declaim (inline conscmp))
+(defun conscmp (cmp)
+  (lambda (candidate resident prevpos left-size)
+    (declare (type (integer 0) prevpos)
+             (type (integer 0) left-size)
+             (type cons candidate))
+    (funcall cmp (car candidate) resident prevpos left-size)))
 
 (declaim (inline single-rotation-p))
 (defun single-rotation-p (a b)
@@ -243,14 +290,14 @@
     (val
       tree
       &key
-      (index 0)
       (cmp #'by-index)
+      (index 0)
       (allow-duplicates t))
   (declare (type integer index)
            (type function cmp)
            (type boolean allow-duplicates))
   (labels
-      ((insrec (rectree recindex)
+      ((insrec (rectree recprev)
          (if (null rectree)
              (glue
                val
@@ -262,27 +309,27 @@
                           (tright right))
                  rectree
                (let* ((lsize (size tleft))
-                      (result (funcall cmp val tval recindex lsize)))
+                      (result (funcall cmp val tval recprev lsize)))
                  (cond
                    ((< result 0)
                     (balance-right
                       tval
-                      (insrec tleft recindex)
+                      (insrec tleft recprev)
                       tright))
                    ((> result 0)
                     (balance-left
                       tval
                       tleft
-                      (insrec tright (- recindex lsize 1))))
+                      (insrec tright result)))
                    (allow-duplicates
                     (balance-left
                       val
                       tleft
                       (ins-min tval
                                tright)))
-                      (:else
-                       (return-from ins tree))))))))
-    (insrec tree index)))
+                   (:else
+                    (return-from ins tree))))))))
+    (insrec tree (1+ index))))
 
 (defun rm-min (tree
                 &key
@@ -312,6 +359,7 @@
                 sentinel)
   (declare (type tree tree))
   (if (null tree)
+
       (values tree sentinel)
 
       (let ((removed-value sentinel))
@@ -343,7 +391,7 @@
            (type function cmp))
   (let ((removed-value sentinel))
     (labels
-        ((rmrec (rectree recindex)
+        ((rmrec (rectree recprev)
            (if (null rectree)
                (return-from rm
                             (values tree sentinel))
@@ -353,12 +401,12 @@
                             (tright right))
                    rectree
                  (let* ((lsize (size tleft))
-                        (result (funcall cmp val tval recindex lsize)))
+                        (result (funcall cmp val tval recprev lsize)))
                    (cond
                      ((< result 0)
                       (balance-left
                         tval
-                        (rmrec tleft recindex)
+                        (rmrec tleft recprev)
                         tright))
                      ((> result 0)
                       (balance-right
@@ -366,7 +414,7 @@
                         tleft
                         (rmrec
                           tright
-                          (- recindex lsize 1))))
+                          result)))
                      ((and (null tright)
                            (null tleft))
                       (setf removed-value tval)
@@ -387,57 +435,40 @@
                           newroot
                           tleft
                           newright)))))))))
-      (values (rmrec tree index) removed-value))))
+      (values (rmrec tree (1+ index)) removed-value))))
 
 (defun retrieve
     (tree
       &key
+      (cmp #'by-index)
       (val nil)
       (index 0)
-      (cmp #'by-index)
       (sentinel nil))
   (declare (type tree tree)
            (type integer index)
            (type function cmp))
-  (if (null tree)
-      sentinel
-      (with-slots ((tval value)
-                   (tsize size)
-                   (tleft left)
-                   (tright right))
-          tree
-        (let* ((lsize (size tleft))
-               (result (funcall cmp val tval index lsize)))
-          (cond
-            ((< result 0)
-             (retrieve
-               tleft
-               :val val
-               :index index
-               :cmp cmp
-               :sentinel sentinel))
-            ((> result 0)
-             (retrieve
-               tright
-               :val val
-               :index (- index lsize 1)
-               :cmp cmp
-               :sentinel sentinel))
-            (:else
-             tval))))))
-
-(defstruct path
-  (elders
-    father
-    youngers))
-
-;;;          d
-;;;       /     \
-;;;      /       \
-;;;     /         \
-;;;    b           f
-;;;  /   \       /   \
-;;; a     c     e     g
+  (labels ((retrec (rectree recprev)
+             (if (null rectree)
+                 sentinel
+                 (with-slots ((tval value)
+                              (tsize size)
+                              (tleft left)
+                              (tright right))
+                     rectree
+                   (let* ((lsize (size tleft))
+                          (result (funcall cmp val tval recprev lsize)))
+                     (cond
+                       ((< result 0)
+                        (retrec
+                          tleft
+                          recprev))
+                       ((> result 0)
+                        (retrec
+                          tright
+                          result))
+                       (:else
+                        tval)))))))
+    (retrec tree (1+ index))))
 
 (defun foldl
     (tree
@@ -497,6 +528,7 @@
            (with-slots ((bval value)
                         (bleft left)
                         (bright right))
+               b
              (balance-right
                bval
                  (join-with
@@ -508,6 +540,7 @@
            (with-slots ((aval value)
                         (aleft left)
                         (aright right))
+               a
                (balance-left
                  aval
                  aleft
@@ -540,14 +573,15 @@
       &key
       index
       val
-      (cmp #'by-int)
+      (cmp #'by-index)
       sentinel)
-  (declare (type tree a)
-           (type tree b))
+  (declare (type tree tree)
+           (type (or null (integer 0)) index)
+           (type function cmp))
   (let ((effective-index (if (null index)
-                             (truncate (size tree) 2)
+                             (1+ (size (node-left tree)))
                              index)))
-    (labels ((splitrec (rectree recindex)
+    (labels ((splitrec (rectree recprev)
                (if (null rectree)
                    (values
                      sentinel
@@ -558,10 +592,10 @@
                                 (tright right))
                        rectree
         (let* ((lsize (size tleft))
-               (result (funcall cmp val tval recindex lsize)))
+               (result (funcall cmp val tval recprev lsize)))
           (cond ((< result 0)
                  (multiple-value-bind (sat sleft sright)
-                     (splitrec tleft recindex)
+                     (splitrec tleft recprev)
                    (values
                      sat
                      sleft
@@ -571,7 +605,7 @@
                      tright))))
                 ((> result 0)
                  (multiple-value-bind (sat sleft sright)
-                     (splitrec tright (- recindex lsize 1))
+                     (splitrec tright result)
                    (values
                      sat
                    (join-with
@@ -584,7 +618,7 @@
                    tval
                    tleft
                    tright))))))))
-      (splitrec tree index))))
+      (splitrec tree effective-index))))
 
 ;;; https://en.wikipedia.org/wiki/Weight-balanced_tree
 (defun set-union (a b cmp)
@@ -599,7 +633,7 @@
              b
            (multiple-value-bind (pivot sleft sright)
                (split-at a
-                         :value bval
+                         :val bval
                          :cmp cmp)
              (declare (ignore pivot))
              (join-with
@@ -611,7 +645,7 @@
                  sright
                  bright
                  cmp)
-                 (join-with newleft newright bval)))))))
+               bval))))))
 
 (defun set-intersection (a b cmp)
   (declare (type tree a)
@@ -625,7 +659,7 @@
              b
            (multiple-value-bind (pivot sleft sright)
                (split-at a
-                         :value bval
+                         :val bval
                          :cmp cmp
                          :sentinel undefined)
              (let ((newleft (set-intersection
@@ -652,7 +686,7 @@
              b
            (multiple-value-bind (pivot sleft sright)
                (split-at a
-                         :value bval
+                         :val bval
                          :cmp cmp)
              (declare (ignore pivot))
              (let ((newleft (set-subtract
@@ -664,13 +698,3 @@
                  bright
                  cmp)))
                  (join newleft newright)))))))
-
-(defun seq-union (a b pred)
-  (let ((ahash (make-hash-table
-                 :test
-                 pred)))
-    (foldr a ahash (lambda (c v)
-                     (setf (gethash v c)
-                           t)))
-    (foldr 
-

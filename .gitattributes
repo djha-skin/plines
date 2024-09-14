@@ -23,6 +23,7 @@
 *.lisp text
 *.asd text
 *.lock text
+*.csv text
 qlfile text
 
 # C

@@ -5,18 +5,13 @@
 
 
 #+(or)
-
 (progn
   (declaim (optimize (speed 0) (space 0) (debug 3)))
 
   (progn
-
     (asdf:load-system "parachute")
-
     (asdf:load-system "com.djhaskin.plines")
-
     (asdf:test-system "com.djhaskin.plines")
-
     )
   )
 
@@ -370,10 +365,6 @@
                                          nil
                                          nil))))))
 
-(defun by-int (candidate resident index size)
-  (declare (ignore index size))
-  (- candidate resident))
-
 (defparameter ins-by-int
   (wbtrees:ins
     1
@@ -392,13 +383,13 @@
                 (wbtrees:ins
                   -1
                   nil)
-                :cmp #'by-int)
-              :cmp #'by-int)
-            :cmp #'by-int)
-          :cmp #'by-int)
-        :cmp #'by-int)
-      :cmp #'by-int)
-    :cmp #'by-int))
+                :cmp #'wbtrees:numcmp)
+              :cmp #'wbtrees:numcmp)
+            :cmp #'wbtrees:numcmp)
+          :cmp #'wbtrees:numcmp)
+        :cmp #'wbtrees:numcmp)
+      :cmp #'wbtrees:numcmp)
+    :cmp #'wbtrees:numcmp))
 
 (define-test
   "weight-balanced trees: insert-functions: sorted mode"

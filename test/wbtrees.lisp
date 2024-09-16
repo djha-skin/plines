@@ -97,7 +97,7 @@
   :parent basic-functions
   (true (< (wbtrees:by-index nil "foo" 0 3) 0))
   (true (> (wbtrees:by-index nil "foo" 3 0) 0))
-  (true (= (wbtrees:by-index 'debate 'action 3 3) 0)))
+  (true (= (wbtrees:by-index 'debate 'action 4 3) 0)))
 
 (define-test rotation-functions)
 
@@ -459,11 +459,11 @@
                         :index 5)
       2)
   (is eql
-      (wbtrees:retrieve nil :index -3 :sentinel :not-found)
+      (wbtrees:retrieve nil :index 25 :sentinel :not-found)
       :not-found)
   (is eql
       (wbtrees:retrieve eight-max-result
-                        :index -3 :sentinel :not-found)
+                        :index 25 :sentinel :not-found)
       :not-found))
 
 (define-test removal-functions)
@@ -483,7 +483,7 @@
     (eq nil)
     (eql :not-found))
   (is-values
-    (wbtrees:rm one-element :index -8 :sentinel :not-found)
+    (wbtrees:rm one-element :index 25 :sentinel :not-found)
     ;; TODO: make `eq` work
     (equalp one-element)
     (eql :not-found))
@@ -626,7 +626,7 @@
   :parent removal-functions
   (is-values (wbtrees:rm ins-by-int
                          :val 5
-                         :cmp #'by-int)
+                         :cmp #'wbtrees:numcmp)
              (equalp
                (wbtrees:glue
                    3

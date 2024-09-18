@@ -1,5 +1,6 @@
 ;;;; main.lisp -- Reference Implementation Parser Tests for NRDL in Common Lisp
 ;;;;
+;;;;
 ;;;; SPDX-FileCopyrightText: 2024 Daniel Jay Haskin
 ;;;; SPDX-License-Identifier: MIT
 
@@ -93,11 +94,11 @@
                (eq e)
                (eq f)))
 
-(define-test "weight-balanced trees: basic functions: by-index"
+(define-test "weight-balanced trees: basic functions: from-left"
   :parent basic-functions
-  (true (< (wbtrees:by-index nil "foo" 0 3) 0))
-  (true (> (wbtrees:by-index nil "foo" 3 0) 0))
-  (true (= (wbtrees:by-index 'debate 'action 4 3) 0)))
+  (true (< (wbtrees:from-left nil "foo" 0 3 3) 0))
+  (true (> (wbtrees:from-left nil "foo" 3 0 3) 0))
+  (true (= (wbtrees:from-left 'debate 'action 4 3 0) 0)))
 
 (define-test rotation-functions)
 
@@ -419,7 +420,7 @@
                       nil)
             (wbtrees:glue 8 nil nil))))
   (is equalp
-      (wbtrees:ins 5 ins-by-int :cmp #'by-int)
+      (wbtrees:ins 5 ins-by-int :cmp #'wbtrees:numcmp)
       (wbtrees:glue
           3
           (wbtrees:glue
@@ -447,7 +448,7 @@
                      (wbtrees:glue 8 nil nil))))
   (is
     eq
-    (wbtrees:ins 5 ins-by-int :cmp #'by-int :allow-duplicates nil)
+    (wbtrees:ins 5 ins-by-int :cmp #'wbtrees:numcmp :allow-duplicates nil)
     ins-by-int))
 
 (define-test retrieve-functions)
@@ -645,3 +646,154 @@
                               (wbtrees:glue 4 nil nil)
                               (wbtrees:glue 8 nil nil))))
              (eql 5)))
+
+(defparameter NATO-alphabet
+  '(
+    "echo"
+    "x-ray"
+    "foxtrot"
+    "delta"
+    "alpha"
+    "romeo"
+    "india"
+    "juliet"
+    "Victor"
+    "yankee"
+    "kilo"
+    "lima"
+    "charlie"
+    "victor"
+    "quebec"
+    "golf"
+    "oscar"
+    "papa"
+    "sierra"
+    "tango"
+    "michael"
+    "bravo"
+    "hotel"
+    "zulu"
+    )
+  )
+
+(defparameter ins-nato
+  (loop
+    with building = nil
+    for na in NATO-alphabet
+    do
+    (setf building (wbtrees:ins na building :cmp #'wbtrees:strcmp))
+    finally
+    (return building)))
+
+(define-test comparison-functions)
+
+(define-test "nato alphabet strcmp function"
+  :parent comparison-functions
+  (is
+    equal
+    (wbtrees:foldl ins-nato)
+    '("zulu" "yankee" "x-ray" "victor" "tango" "sierra" "romeo" "quebec" "papa"
+     "oscar" "michael" "lima" "kilo" "juliet" "india" "hotel" "golf" "foxtrot"
+     "echo" "delta" "charlie" "bravo" "alpha" "Victor"))
+  (is
+    equal
+    (wbtrees:foldr ins-nato)
+    '("Victor" "alpha" "bravo" "charlie" "delta" "echo" "foxtrot" "golf" "hotel"
+     "india" "juliet" "kilo" "lima" "michael" "oscar" "papa" "quebec" "romeo"
+     "sierra" "tango" "victor" "x-ray" "yankee" "zulu")))
+
+
+(defparameter NATO-alphabet-symbol
+  '(
+    "echo"
+    "x-ray"
+    "foxtrot"
+    "delta"
+    "alpha"
+    "romeo"
+    "india"
+    "juliet"
+    "Victor"
+    "yankee"
+    "kilo"
+    "lima"
+    "charlie"
+    "victor"
+    "quebec"
+    "golf"
+    "oscar"
+    "papa"
+    "sierra"
+    "tango"
+    "michael"
+    "bravo"
+    "hotel"
+    "zulu"
+    )
+  )
+
+(define-test "symbolcmp functions"
+  :parent comparison-functions
+  (true
+      (zerop (wbtrees:symbolcmp :x :x 0 0 0)))
+  (true
+      (zerop (wbtrees:symbolcmp :x :x 15 38 4)))
+  (true (< (wbtrees:symbolcmp 'cl:+ ':+ 0 0 0) 0)))
+
+
+(defparameter an-alist
+  '(
+    ("echo" . 1)
+    ("x-ray" . 2)
+    ("foxtrot" . 3)
+    ("delta" . 4)
+    ("alpha" . 5)
+    ("romeo" . 6)
+    ("india" . 7)
+    ("juliet" . 8)
+    ("Victor" . 9)
+    ("yankee" . 10)
+    ("kilo" . 11)
+    ("lima" . 12)
+    ("charlie" . 13)
+    ("victor" . 14)
+    ("quebec" . 15)
+    ("golf" . 16)
+    ("oscar" . 17)
+    ("papa" . 18)
+    ("sierra" . 19)
+    ("tango" . 20)
+    ("michael" . 21)
+    ("bravo" . 22)
+    ("hotel" . 23)
+    ("zulu" . 24)
+  ))
+
+(defparameter ins-alist
+  (loop
+    with building = nil
+    with cmpfun = (wbtrees:kvcmp #'wbtrees:strcmp)
+    for na in an-alist
+    do
+    (setf building (wbtrees:ins na building :cmp cmpfun))
+    finally
+    (return building)))
+
+(define-test "kvcmp"
+  :parent comparison-functions
+  (is
+    equal
+    (wbtrees:foldr ins-alist)
+    '(("Victor" . 9) ("alpha" . 5) ("bravo" . 22) ("charlie" . 13) ("delta" . 4)
+                    ("echo" . 1) ("foxtrot" . 3) ("golf" . 16) ("hotel" . 23) ("india" . 7)
+                    ("juliet" . 8) ("kilo" . 11) ("lima" . 12) ("michael" . 21) ("oscar" . 17)
+                    ("papa" . 18) ("quebec" . 15) ("romeo" . 6) ("sierra" . 19) ("tango" . 20)
+                    ("victor" . 14) ("x-ray" . 2) ("yankee" . 10) ("zulu" . 24)))
+  (is
+    equal
+    (wbtrees:foldl ins-alist)
+    '(("zulu" . 24) ("yankee" . 10) ("x-ray" . 2) ("victor" . 14) ("tango" . 20)
+                   ("sierra" . 19) ("romeo" . 6) ("quebec" . 15) ("papa" . 18) ("oscar" . 17)
+                   ("michael" . 21) ("lima" . 12) ("kilo" . 11) ("juliet" . 8) ("india" . 7)
+                   ("hotel" . 23) ("golf" . 16) ("foxtrot" . 3) ("echo" . 1) ("delta" . 4)
+                   ("charlie" . 13) ("bravo" . 22) ("alpha" . 5) ("Victor" . 9))))

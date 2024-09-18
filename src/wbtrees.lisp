@@ -7,9 +7,7 @@
 
 #+(or)
 (progn
-  (declaim (optimize (speed 0) (space 0) (debug 3)))
-           (asdf:load-system "alexandria")
-           (asdf:load-system "fset"))
+  (declaim (optimize (speed 3) (safety 1) (debug 0))))
 
 (in-package #:cl-user)
 
@@ -20,11 +18,12 @@
   (:export
     size
     tree
-    by-index
+    from-left
+    from-right
     strcmp
     symbolcmp
     numcmp
-    conscmp
+    kvcmp
     ins-min
     ins-max
     ins
@@ -50,6 +49,7 @@
 
 (deftype tree ()
   '(or node null))
+
 
 (declaim (inline size))
 (defun size (tree)
@@ -81,22 +81,37 @@
       tree
       (values tval tleft tright)))
 
-(declaim (inline by-index))
-(defun by-index (candidate resident prevpos left-size)
+(declaim (inline from-left))
+(defun from-left (candidate resident prevpos left-size right-size)
   (declare (ignore candidate)
            (ignore resident)
-           (type (integer 0) prevpos)
-           (type (integer 0) left-size))
-  (- prevpos left-size 1))
-
-(declaim (inline strcmp))
-(defun strcmp (candidate resident prevpos left-size)
-  (declare (type string candidate)
-           (type string resident)
+           (ignore right-size)
            (type (integer 0) prevpos)
            (type (integer 0) left-size)
+           (type (integer 0) right-size))
+  (- prevpos left-size 1))
+
+(declaim (inline from-right))
+(defun from-right (candidate resident prevpos left-size right-size)
+  (declare (ignore candidate)
+           (ignore resident)
+           (ignore left-size)
+           (type (integer 0) prevpos)
+           (type (integer 0) left-size)
+           (type (integer 0) right-size))
+  (- (1+ right-size) prevpos))
+
+(declaim (inline strcmp))
+(defun strcmp (candidate resident prevpos left-size right-size)
+  (declare (type string candidate)
+           (type string resident)
+
+           (type (integer 0) prevpos)
+           (type (integer 0) left-size)
+           (type (integer 0) right-size)
            (ignore prevpos)
-           (ignore left-size))
+           (ignore left-size)
+           (ignore right-size))
   (loop for c across candidate
         for r across resident
         for diff = (- (char-code c) (char-code r))
@@ -105,34 +120,48 @@
         (return diff)))
 
 (declaim (inline symbolcmp))
-(defun symbolcmp (candidate resident prevpos left-size)
+(defun symbolcmp (candidate resident prevpos left-size right-size)
   (declare (type symbol candidate)
            (type symbol resident)
            (type (integer 0) prevpos)
-           (type (integer 0) left-size))
-  (strcmp
-    (symbol-name candidate)
-    (symbol-name resident)
-    prevpos
-    left-size))
+           (type (integer 0) left-size)
+           (type (integer 0) right-size))
+  (let ((pkgcmp
+          (strcmp
+            (package-name (symbol-package candidate))
+            (package-name (symbol-package resident))
+            prevpos
+            left-size
+            right-size)))
+    (if (zerop pkgcmp)
+        (strcmp (symbol-name candidate)
+                (symbol-name resident)
+                prevpos
+                left-size
+                right-size)
+        pkgcmp)))
 
 (declaim (inline numcmp))
-(defun numcmp (candidate resident prevpos left-size)
+(defun numcmp (candidate resident prevpos left-size right-size)
   (declare (type number resident)
            (type number candidate)
            (type (integer 0) left-size)
+           (type (integer 0) right-size)
            (type (integer 0) prevpos)
            (ignore left-size)
+           (ignore right-size)
            (ignore prevpos))
   (- candidate resident))
 
-(declaim (inline conscmp))
-(defun conscmp (cmp)
-  (lambda (candidate resident prevpos left-size)
+(declaim (inline kvcmp))
+(defun kvcmp (cmp)
+  (lambda (candidate resident prevpos left-size right-size)
     (declare (type (integer 0) prevpos)
              (type (integer 0) left-size)
-             (type cons candidate))
-    (funcall cmp (car candidate) resident prevpos left-size)))
+             (type (integer 0) right-size)
+             (type cons candidate)
+             (type cons resident))
+    (funcall cmp (car candidate) (car resident) prevpos left-size right-size)))
 
 (declaim (inline single-rotation-p))
 (defun single-rotation-p (a b)
@@ -290,7 +319,7 @@
     (val
       tree
       &key
-      (cmp #'by-index)
+      (cmp #'from-left)
       (index 0)
       (allow-duplicates t))
   (declare (type integer index)
@@ -309,7 +338,8 @@
                           (tright right))
                  rectree
                (let* ((lsize (size tleft))
-                      (result (funcall cmp val tval recprev lsize)))
+                      (rsize (size tright))
+                      (result (funcall cmp val tval recprev lsize rsize)))
                  (cond
                    ((< result 0)
                     (balance-right
@@ -384,7 +414,7 @@
       &key
       (val nil)
       (index 0)
-      (cmp #'by-index)
+      (cmp #'from-left)
       (sentinel nil))
   (declare (type tree tree)
            (type integer index)
@@ -401,7 +431,8 @@
                             (tright right))
                    rectree
                  (let* ((lsize (size tleft))
-                        (result (funcall cmp val tval recprev lsize)))
+                        (rsize (size tright))
+                        (result (funcall cmp val tval recprev lsize rsize)))
                    (cond
                      ((< result 0)
                       (balance-left
@@ -440,7 +471,7 @@
 (defun retrieve
     (tree
       &key
-      (cmp #'by-index)
+      (cmp #'from-left)
       (val nil)
       (index 0)
       (sentinel nil))
@@ -456,7 +487,8 @@
                               (tright right))
                      rectree
                    (let* ((lsize (size tleft))
-                          (result (funcall cmp val tval recprev lsize)))
+                          (rsize (size tright))
+                          (result (funcall cmp val tval recprev lsize rsize)))
                      (cond
                        ((< result 0)
                         (retrec
@@ -573,7 +605,7 @@
       &key
       index
       val
-      (cmp #'by-index)
+      (cmp #'from-left)
       sentinel)
   (declare (type tree tree)
            (type (or null (integer 0)) index)
@@ -592,7 +624,8 @@
                                 (tright right))
                        rectree
         (let* ((lsize (size tleft))
-               (result (funcall cmp val tval recprev lsize)))
+               (rsize (size tright))
+               (result (funcall cmp val tval recprev lsize rsize)))
           (cond ((< result 0)
                  (multiple-value-bind (sat sleft sright)
                      (splitrec tleft recprev)
@@ -650,6 +683,7 @@
 (defun set-intersection (a b cmp)
   (declare (type tree a)
            (type tree b))
+  ;; There are other, better algorithms, but like, whatever
   (cond ((null a) a)
         ((null b) b)
         (:else

@@ -17,3 +17,5 @@ documentation-utils, ghcr.io/ocicl/documentation-utils@sha256:b2a1b3f3bcd1a738af
 trivial-indent, ghcr.io/ocicl/trivial-indent@sha256:f1ae624eb2ca37133912e9920587488ea6e2f1d6419ba4a1776e63c2bdff0fd9, trivial-indent-20240503-b5d490f/trivial-indent.asd
 trivial-custom-debugger, ghcr.io/ocicl/trivial-custom-debugger@sha256:b72a9d829d2635982c5d07604c24b22158cb550cd6b2915df2280ae59922be11, trivial-custom-debugger-20240503-802473c/trivial-custom-debugger.asd
 form-fiddle, ghcr.io/ocicl/form-fiddle@sha256:9be1b82983356d789cadf00a694212b0494bc55f6b0f7f8e41f9839187387fd0, form-fiddle-20240503-3bd0dfd/form-fiddle.asd
+sealable-metaobjects, ghcr.io/ocicl/sealable-metaobjects@sha256:3386190c1ec804b36cd31e57beba3e24f59b710af7d4abde36d483f10c714ed9, sealable-metaobjects-20240503-e09ec97/code/sealable-metaobjects.asd
+closer-mop, ghcr.io/ocicl/closer-mop@sha256:1c02d5bd0386094047941a4f4cc7423c82b3b6408763d0ef2704f61589cf284d, closer-mop-20240830-f434ed2/closer-mop.asd

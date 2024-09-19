@@ -94,11 +94,11 @@
                (eq e)
                (eq f)))
 
-(define-test "weight-balanced trees: basic functions: from-left"
+(define-test "weight-balanced trees: basic functions: by-index"
   :parent basic-functions
-  (true (< (wbtrees:from-left nil "foo" 0 3 3) 0))
-  (true (> (wbtrees:from-left nil "foo" 3 0 3) 0))
-  (true (= (wbtrees:from-left 'debate 'action 4 3 0) 0)))
+  (true (< (wbtrees:by-index nil "foo" 0 3) 0))
+  (true (> (wbtrees:by-index nil "foo" 3 0) 0))
+  (true (= (wbtrees:by-index 'debate 'action 4 3) 0)))
 
 (define-test rotation-functions)
 
@@ -677,13 +677,9 @@
   )
 
 (defparameter ins-nato
-  (loop
-    with building = nil
-    for na in NATO-alphabet
-    do
-    (setf building (wbtrees:ins na building :cmp #'wbtrees:strcmp))
-    finally
-    (return building)))
+  (wbtrees:seq-tree
+    NATO-alphabet
+    :cmp #'wbtrees:strcmp))
 
 (define-test comparison-functions)
 
@@ -703,42 +699,13 @@
      "sierra" "tango" "victor" "x-ray" "yankee" "zulu")))
 
 
-(defparameter NATO-alphabet-symbol
-  '(
-    "echo"
-    "x-ray"
-    "foxtrot"
-    "delta"
-    "alpha"
-    "romeo"
-    "india"
-    "juliet"
-    "Victor"
-    "yankee"
-    "kilo"
-    "lima"
-    "charlie"
-    "victor"
-    "quebec"
-    "golf"
-    "oscar"
-    "papa"
-    "sierra"
-    "tango"
-    "michael"
-    "bravo"
-    "hotel"
-    "zulu"
-    )
-  )
-
 (define-test "symbolcmp functions"
   :parent comparison-functions
   (true
-      (zerop (wbtrees:symbolcmp :x :x 0 0 0)))
+      (zerop (wbtrees:symbolcmp :x :x 0 0)))
   (true
-      (zerop (wbtrees:symbolcmp :x :x 15 38 4)))
-  (true (< (wbtrees:symbolcmp 'cl:+ ':+ 0 0 0) 0)))
+      (zerop (wbtrees:symbolcmp :x :x 15 38)))
+  (true (< (wbtrees:symbolcmp 'cl:+ ':+ 0 0) 0)))
 
 
 (defparameter an-alist
@@ -797,3 +764,144 @@
                    ("michael" . 21) ("lima" . 12) ("kilo" . 11) ("juliet" . 8) ("india" . 7)
                    ("hotel" . 23) ("golf" . 16) ("foxtrot" . 3) ("echo" . 1) ("delta" . 4)
                    ("charlie" . 13) ("bravo" . 22) ("alpha" . 5) ("Victor" . 9))))
+
+
+(define-test "reverse-tree"
+  (true (null (wbtrees:reverse-tree nil)))
+  (is
+    equal
+    (wbtrees:foldr (wbtrees:reverse-tree eight-element))
+    (wbtrees:foldl eight-element)))
+
+(defparameter ins-alist-insorder
+  (loop
+    with building = nil
+    for na in an-alist
+    do
+    (setf building (wbtrees:ins na building :index (wbtrees:size building)))
+    finally
+    (return building)))
+
+(define-test split-and-join-functions)
+
+(define-test "split-at"
+  :parent split-and-join-functions
+  (loop for i from 0 below (wbtrees:size ins-alist-insorder)
+        do
+        (multiple-value-bind (pivot ltree rtree)
+            (wbtrees:split-at ins-alist-insorder :index i)
+          (is
+            equal
+            (1+ i)
+            (cdr pivot))
+          (true (wbtrees:balanced-p ltree))
+          (true (wbtrees:balanced-p rtree)))))
+
+(defparameter double-eights
+  (wbtrees:join-with 88 eight-element eight-element))
+
+(defparameter triple-eights
+  (wbtrees:join-with 888 eight-element double-eights))
+
+(define-test join-functions
+  :parent split-and-join-functions
+  (is
+    equalp
+    double-eights
+    (wbtrees:glue 88 eight-element eight-element))
+  (true (wbtrees:balanced-p double-eights))
+  (true (wbtrees:balanced-p triple-eights))
+  (is
+    equal
+    (let ((e8list
+            (wbtrees:foldr eight-element)))
+      (concatenate 'list e8list e8list))
+    (wbtrees:foldr (wbtrees:join
+                     eight-element
+                     eight-element))))
+
+
+(defparameter endof-nato-alphabet
+  '(
+    "x-ray"
+    "whiskey"
+    "zulu"
+    "yankee"
+  ))
+
+(defparameter startof-nato-alphabet
+  '(
+    "echo"
+    "foxtrot"
+    "delta"
+    "alpha"
+    "romeo"
+    "india"
+    "juliet"
+    "Victor"
+    "kilo"
+    "lima"
+    "charlie"
+    "victor"
+    "quebec"
+    "golf"
+    "oscar"
+    "papa"
+    "sierra"
+    "tango"
+    "michael"
+    "bravo"
+    "hotel"
+    )
+  )
+
+(defparameter ins-eoa
+  (wbtrees:seq-tree
+    endof-nato-alphabet
+    :cmp #'wbtrees:strcmp))
+
+(defparameter ins-soa
+  (wbtrees:seq-tree
+    startof-nato-alphabet
+    :cmp #'wbtrees:strcmp))
+
+
+(define-test set-functions
+  (true (wbtrees:balanced-p ins-eoa))
+  (true (wbtrees:balanced-p ins-soa))
+  (is
+    equal
+    '("x-ray" "yankee" "zulu")
+    (wbtrees:foldr (wbtrees:set-intersection
+                     ins-nato
+                     ins-eoa
+                     #'wbtrees:strcmp)))
+  (is
+    equal
+    (wbtrees:foldr (wbtrees:set-subtract
+                     ins-nato
+                     ins-eoa
+                     #'wbtrees:strcmp))
+    (wbtrees:foldr ins-soa))
+  (is
+    equal
+    (wbtrees:size (wbtrees:set-union
+                     ins-nato
+                     ins-nato
+                     #'wbtrees:strcmp))
+    (wbtrees:size ins-nato))
+  (is
+    equal
+    (1+ (wbtrees:size ins-nato))
+    (wbtrees:size (wbtrees:set-union
+                    ins-nato
+                    ins-eoa
+                    #'wbtrees:strcmp)))
+  (false (wbtrees:set-intersection
+           ins-soa
+           ins-eoa
+           #'wbtrees:strcmp))
+  (false (wbtrees:set-subtract
+           ins-soa
+           ins-soa
+           #'wbtrees:strcmp)))

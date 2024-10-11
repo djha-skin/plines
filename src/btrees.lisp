@@ -48,7 +48,7 @@
 
 (defparameter undefined 'undefined)
 
-(defstruct bseq ()
+(defstruct (bseq :constructor mkbseq) ()
   size
   items)
 
@@ -58,21 +58,16 @@
 
 (declaim (inline size))
 (defgeneric size (tree))
-(defgeneric
+
+(defmethod size ((tree bseq))
   (bseq-size tree))
 
-
-(defgeneric compute-size (item))
-
-(defmethod compute-size ((item t))
+(defmethod size ((tree t))
   1)
 
-(defmethod compute-size ((item bseq))
-  (loop for child across (bseq-items item)
+(defun compute-size (items)
+  (loop for child across items
         sum (size child)))
-
-
-
 
 ;; (declaim (inline by-index))
 ;; (defun by-index (candidate resident prevpos next-size)
@@ -160,14 +155,77 @@
         finally
         (return result)))
 
+(defun vector-patch (elem vec index)
+  (loop with result = (make-array (length vec))
+        for i from 0 below (length result)
+        do
+        (setf (svref result i)
+              (if (= index i)
+                  elem
+                  (svref vec i)))
+        finally
+        (return result)))
+
+(defun vector-patch-and-insert (a b vec index)
+  "
+  Patches an element at the index and inserts one after that.
+  Like (vector-insert b (vector-patch a vec index) (1+ index))
+  "
+  (loop with result = (make-array (1+ (length vec)))
+        for result-place = 0 then (1+ result-place)
+        for i from 0 below (length vec)
+        do
+        (if (= index i)
+          (progn
+            (setf (svref result result-place)
+                    a)
+              (incf result-place)
+              (setf (svref result result-place)
+                    b))
+            (setf (svref result result-place)
+                  (svref vec i)))
+        finally
+        (return result)))
+
+(defun vector-delete-and-patch (vec index)
+  "
+  Deletes element at the index and patches the element before that.
+  Like (vector-patch elem (vector-delete vec index) (1- index))
+  "
+  (loop with result = (make-array (1- (length vec)))
+        with place = 0
+        for i from 0 below (length vec)
+        when (/= i index)
+        do
+        (setf (svref result place) (svref vec i))
+        (incf place)
+        finally
+        (return result)))
+
+
+(defun vector-patch-and-delete 
+
 (defparameter *b* 16)
 
-(defun size-by-children (tree)
-  (loop for child across (bseq-items tree)
-        sum (size 
+(declaim (inline make-bseq))
+(defun make-bseq (items)
+  (mkbseq (compute-size items) items))
 
-(defun split (tree)
-  (
+(defun split-node (tree)
+  (let* ((tsize (length (bseq-items tree)))
+         (lsize (ash tsize -1))
+         (left (subseq (bseq-items tree) 0 lsize))
+         (right (subseq (bseq-items tree) lsize tsize)))
+    (values
+      (make-bseq left)
+      (make-bseq right))))
+
+(defun merge-nodes (left right)
+  (let ((items (concatenate
+                 'vector
+                 left
+                 right)))
+    (make-bseq items)))
 
 (defgeneric ins-min (val thing))
 (defmethod ins-min ((val t) (thing t))
